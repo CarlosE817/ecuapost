@@ -127,19 +127,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               {(authMode === 'phone' || authMode === 'verify') && (
                 <button
                   onClick={() => setAuthMode('login')}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 </button>
               )}
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {authMode === 'login' && 'Iniciar Sesión'}
                 {authMode === 'register' && 'Crear Cuenta'}
                 {authMode === 'phone' && 'Teléfono'}
@@ -148,31 +148,31 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             </div>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
             </div>
           )}
 
           {authMode === 'login' && (
             <div className="space-y-4">
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                 Únete a la conversación en EcuaPost
               </p>
 
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
                 <Chrome className="h-5 w-5 text-blue-500" />
-                <span className="font-medium">Continuar con Google</span>
+                <span className="font-medium text-gray-900 dark:text-white">Continuar con Google</span>
               </button>
 
               <button
@@ -186,14 +186,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
               <button
                 onClick={() => setAuthMode('phone')}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <Phone className="h-5 w-5 text-green-500" />
-                <span className="font-medium">Continuar con Teléfono</span>
+                <span className="font-medium text-gray-900 dark:text-white">Continuar con Teléfono</span>
               </button>
 
               <div className="text-center mt-6">
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
                   ¿No tienes cuenta?{' '}
                   <button
                     onClick={() => setAuthMode('register')}
@@ -208,17 +208,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
           {authMode === 'register' && (
             <div className="space-y-4">
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                 Crea tu cuenta en EcuaPost
               </p>
 
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
                 <Chrome className="h-5 w-5 text-blue-500" />
-                <span className="font-medium">Registrarse con Google</span>
+                <span className="font-medium text-gray-900 dark:text-white">Registrarse con Google</span>
               </button>
 
               <button
@@ -232,14 +232,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
               <button
                 onClick={() => setAuthMode('phone')}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <Phone className="h-5 w-5 text-green-500" />
-                <span className="font-medium">Registrarse con Teléfono</span>
+                <span className="font-medium text-gray-900 dark:text-white">Registrarse con Teléfono</span>
               </button>
 
               <div className="text-center mt-6">
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
                   ¿Ya tienes cuenta?{' '}
                   <button
                     onClick={() => setAuthMode('login')}
@@ -254,16 +254,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
           {authMode === 'phone' && (
             <div className="space-y-4">
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                 Ingresa tu número de teléfono
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Número de teléfono
                 </label>
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm">
                     +593
                   </span>
                   <input
@@ -271,10 +271,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="987654321"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Formato: 987654321 (sin el 0 inicial)
                 </p>
               </div>
@@ -289,7 +289,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 {isLoading ? 'Enviando...' : 'Enviar código de verificación'}
               </button>
 
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                 <Shield className="h-4 w-4" />
                 <span>
                   Tu número será verificado y protegido. No lo compartiremos.
@@ -300,12 +300,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
           {authMode === 'verify' && (
             <div className="space-y-4">
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                 Ingresa el código de 6 dígitos enviado a tu teléfono
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Código de verificación
                 </label>
                 <input
@@ -314,7 +314,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                   onChange={(e) => setVerificationCode(e.target.value)}
                   placeholder="123456"
                   maxLength={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg tracking-widest"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
 
@@ -335,8 +335,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             </div>
           )}
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
               Al continuar, aceptas nuestros{' '}
               <a href="#" className="text-blue-500 hover:underline">
                 Términos de Servicio
