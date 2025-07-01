@@ -9,14 +9,19 @@ import Notifications from './components/Notifications';
 import Settings from './components/Settings';
 import Explore from './components/Explore';
 import Toast from './components/Toast';
-import { tweets as initialTweets, currentUser } from './data/mockData';
-import { Tweet } from './types';
+import AuthModal from './components/AuthModal';
+import { tweets as initialTweets } from './data/mockData';
+import { Tweet, User } from './types';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [bookmarkedTweets, setBookmarkedTweets] = useState<string[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const { user, loading } = useAuth();
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -57,12 +62,47 @@ function App() {
     localStorage.setItem('ecuapost-bookmarks', JSON.stringify(bookmarkedTweets));
   }, [bookmarkedTweets]);
 
+  // Show auth modal if user is not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      setShowAuthModal(true);
+    }
+  }, [user, loading]);
+
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  const getCurrentUser = (): User => {
+    if (user) {
+      return {
+        id: user.uid,
+        username: user.email?.split('@')[0] || 'usuario',
+        displayName: user.displayName || 'Usuario',
+        avatar: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'Usuario')}&background=3b82f6&color=fff`,
+        bio: 'Usuario de EcuaPost',
+        followers: 0,
+        following: 0,
+        verified: false
+      };
+    }
+    
+    // Fallback user for demo purposes
+    return {
+      id: 'demo',
+      username: 'demo_user',
+      displayName: 'Usuario Demo',
+      avatar: 'https://ui-avatars.com/api/?name=Demo&background=3b82f6&color=fff',
+      bio: 'Usuario demo de EcuaPost',
+      followers: 0,
+      following: 0,
+      verified: false
+    };
+  };
+
   const handleNewTweet = useCallback((content: string) => {
+    const currentUser = getCurrentUser();
     const newTweet: Tweet = {
       id: Date.now().toString(),
       user: currentUser,
@@ -76,7 +116,7 @@ function App() {
     };
     setTweets(prev => [newTweet, ...prev]);
     showToast('¡Tweet publicado exitosamente!', 'success');
-  }, []);
+  }, [user]);
 
   const handleLike = useCallback((tweetId: string) => {
     setTweets(prev => prev.map(tweet => {
@@ -137,7 +177,14 @@ function App() {
     showToast('Tweet editado exitosamente', 'success');
   }, []);
 
+  const handleAuthSuccess = () => {
+    showToast('¡Bienvenido a EcuaPost!', 'success');
+  };
+
   const renderContent = () => {
+    const currentUser = getCurrentUser();
+    const userTweets = tweets.filter(tweet => tweet.user.id === currentUser.id);
+
     switch (activeTab) {
       case 'home':
         return (
@@ -162,7 +209,7 @@ function App() {
       case 'bookmarks':
         return <Bookmarks tweets={tweets.filter(tweet => bookmarkedTweets.includes(tweet.id))} onLike={handleLike} onRetweet={handleRetweet} onReply={handleReply} onBookmark={handleBookmark} bookmarkedTweets={bookmarkedTweets} />;
       case 'profile':
-        return <Profile user={currentUser} tweets={tweets.filter(tweet => tweet.user.id === currentUser.id)} onLike={handleLike} onRetweet={handleRetweet} onReply={handleReply} onBookmark={handleBookmark} onDelete={handleDeleteTweet} onEdit={handleEditTweet} bookmarkedTweets={bookmarkedTweets} />;
+        return <Profile user={currentUser} tweets={userTweets} onLike={handleLike} onRetweet={handleRetweet} onReply={handleReply} onBookmark={handleBookmark} onDelete={handleDeleteTweet} onEdit={handleEditTweet} bookmarkedTweets={bookmarkedTweets} />;
       case 'settings':
         return <Settings />;
       default:
@@ -181,6 +228,17 @@ function App() {
         );
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando EcuaPost...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -207,6 +265,12 @@ function App() {
           onClose={() => setToast(null)}
         />
       )}
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

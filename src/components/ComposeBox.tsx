@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Smile, Calendar, MapPin } from 'lucide-react';
-import { currentUser } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
 
 interface ComposeBoxProps {
   onTweet: (content: string) => void;
@@ -8,6 +8,7 @@ interface ComposeBoxProps {
 
 const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
   const [content, setContent] = useState('');
+  const { user } = useAuth();
   const maxLength = 280;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -22,20 +23,23 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
   const isOverLimit = remainingChars < 0;
   const isNearLimit = remainingChars <= 20;
 
+  const userAvatar = user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'Usuario')}&background=3b82f6&color=fff`;
+  const userName = user?.displayName || 'Usuario';
+
   return (
     <div className="border-b border-gray-200 p-4">
       <form onSubmit={handleSubmit}>
         <div className="flex space-x-3">
           <img
-            src={currentUser.avatar}
-            alt={currentUser.displayName}
+            src={userAvatar}
+            alt={userName}
             className="w-12 h-12 rounded-full"
           />
           <div className="flex-1">
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="What's happening?"
+              placeholder="¿Qué está pasando?"
               className="w-full text-xl placeholder-gray-500 border-none outline-none resize-none"
               rows={3}
             />
@@ -106,7 +110,7 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
                       : 'bg-blue-500 hover:bg-blue-600 text-white'
                   }`}
                 >
-                  Tweet
+                  Publicar
                 </button>
               </div>
             </div>

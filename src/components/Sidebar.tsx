@@ -1,5 +1,7 @@
 import React from 'react';
 import { Home, Search, Bell, Mail, Bookmark, User, Settings, Megaphone } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import UserMenu from './UserMenu';
 
 interface SidebarProps {
   activeTab: string;
@@ -7,16 +9,17 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
- const menuItems = [
-  { icon: Home, label: 'Home', id: 'home' },
-  { icon: Search, label: 'Buscar posts', id: 'explore' }, // cambiado
-  { icon: Bell, label: 'Notifications', id: 'notifications' },
-  { icon: Mail, label: 'Messages', id: 'messages' },
-  { icon: Bookmark, label: 'Bookmarks', id: 'bookmarks' },
-  { icon: User, label: 'Profile', id: 'profile' },
-  { icon: Settings, label: 'Settings', id: 'settings' }
-];
- 
+  const { user } = useAuth();
+
+  const menuItems = [
+    { icon: Home, label: 'Home', id: 'home' },
+    { icon: Search, label: 'Buscar posts', id: 'explore' },
+    { icon: Bell, label: 'Notifications', id: 'notifications' },
+    { icon: Mail, label: 'Messages', id: 'messages' },
+    { icon: Bookmark, label: 'Bookmarks', id: 'bookmarks' },
+    { icon: User, label: 'Profile', id: 'profile' },
+    { icon: Settings, label: 'Settings', id: 'settings' }
+  ];
 
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -47,10 +50,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
         })}
       </nav>
       
-      <div className="p-4">
+      <div className="p-4 space-y-4">
         <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition-colors">
           Publicar
         </button>
+        
+        {user && (
+          <UserMenu
+            onProfileClick={() => onTabChange('profile')}
+            onSettingsClick={() => onTabChange('settings')}
+          />
+        )}
       </div>
     </div>
   );

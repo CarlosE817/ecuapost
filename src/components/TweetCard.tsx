@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, BadgeCheck, Bookmark, Trash2, Edit3 } from 'lucide-react';
 import { Tweet } from '../types';
-import { currentUser } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
 
 interface TweetCardProps {
   tweet: Tweet;
@@ -27,6 +27,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(tweet.content);
+  const { user } = useAuth();
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -46,7 +47,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
     return num.toString();
   };
 
-  const isOwnTweet = tweet.user.id === currentUser.id;
+  const isOwnTweet = user && tweet.user.id === user.uid;
 
   const handleEdit = () => {
     if (onEdit && editContent.trim() && editContent !== tweet.content) {

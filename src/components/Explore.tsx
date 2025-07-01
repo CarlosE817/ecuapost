@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, TrendingUp } from 'lucide-react';
+import { Search, TrendingUp, User } from 'lucide-react';
 import { Tweet } from '../types';
 import TweetCard from './TweetCard';
 import { trendingTopics } from '../data/mockData';
