@@ -26,15 +26,20 @@ export const useAuth = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        setUser({
+        const authUser: AuthUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           phoneNumber: firebaseUser.phoneNumber
-        });
+        };
+        setUser(authUser);
+        
+        // Guardar en localStorage para persistencia
+        localStorage.setItem('ecuapost-user', JSON.stringify(authUser));
       } else {
         setUser(null);
+        localStorage.removeItem('ecuapost-user');
       }
       setLoading(false);
     });
@@ -47,8 +52,10 @@ export const useAuth = () => {
       setError(null);
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
+      console.log('✅ Usuario logueado con Google:', result.user);
       return result.user;
     } catch (error: any) {
+      console.error('❌ Error al iniciar sesión con Google:', error);
       setError(error.message);
       throw error;
     } finally {
@@ -61,8 +68,10 @@ export const useAuth = () => {
       setError(null);
       setLoading(true);
       const result = await signInWithPopup(auth, facebookProvider);
+      console.log('✅ Usuario logueado con Facebook:', result.user);
       return result.user;
     } catch (error: any) {
+      console.error('❌ Error al iniciar sesión con Facebook:', error);
       setError(error.message);
       throw error;
     } finally {
@@ -74,9 +83,12 @@ export const useAuth = () => {
     try {
       setError(null);
       setLoading(true);
+      console.log('📱 Enviando código SMS a:', phoneNumber);
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+      console.log('✅ Código SMS enviado');
       return confirmationResult;
     } catch (error: any) {
+      console.error('❌ Error al enviar SMS:', error);
       setError(error.message);
       throw error;
     } finally {
@@ -88,7 +100,10 @@ export const useAuth = () => {
     try {
       setError(null);
       await firebaseSignOut(auth);
+      localStorage.removeItem('ecuapost-user');
+      console.log('✅ Sesión cerrada');
     } catch (error: any) {
+      console.error('❌ Error al cerrar sesión:', error);
       setError(error.message);
       throw error;
     }

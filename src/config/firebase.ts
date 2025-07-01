@@ -1,14 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
 
-// Configuración de Firebase (reemplaza con tus credenciales)
+// Configuración de Firebase con tus credenciales reales
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ecuapost-demo.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ecuapost-demo",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ecuapost-demo.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef123456"
+  apiKey: "AIzaSyDfwIjp_wyuD3hToQ3Dy2FO9AGsL_bdy8g",
+  authDomain: "ecuapost-58055.firebaseapp.com",
+  projectId: "ecuapost-58055",
+  storageBucket: "ecuapost-58055.appspot.com",
+  messagingSenderId: "683550310254",
+  appId: "1:683550310254:web:1b144218f78acc9b2e0b7f",
+  measurementId: "G-FJ1Y7LN299"
 };
 
 // Inicializar Firebase
