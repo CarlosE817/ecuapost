@@ -65,7 +65,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
   };
 
   return (
-    <div className="border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+    <div className="border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors bg-white dark:bg-gray-900">
       <div className="flex space-x-3">
         <img
           src={tweet.user.avatar}
@@ -75,29 +75,29 @@ const TweetCard: React.FC<TweetCardProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2">
-            <h3 className="font-bold text-gray-900 truncate">{tweet.user.displayName}</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white truncate">{tweet.user.displayName}</h3>
             {tweet.user.verified && (
               <BadgeCheck className="h-5 w-5 text-blue-500" />
             )}
-            <span className="text-gray-500 truncate">@{tweet.user.username}</span>
-            <span className="text-gray-500">·</span>
-            <span className="text-gray-500">{formatTime(tweet.timestamp)}</span>
+            <span className="text-gray-500 dark:text-gray-400 truncate">@{tweet.user.username}</span>
+            <span className="text-gray-500 dark:text-gray-400">·</span>
+            <span className="text-gray-500 dark:text-gray-400">{formatTime(tweet.timestamp)}</span>
             <div className="ml-auto relative">
               <button 
                 onClick={() => setShowMenu(!showMenu)}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors"
               >
                 <MoreHorizontal className="h-5 w-5" />
               </button>
               
               {showMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
                   <button
                     onClick={() => {
                       onBookmark(tweet.id);
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 text-gray-900 dark:text-white"
                   >
                     <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current text-blue-500' : ''}`} />
                     <span>{isBookmarked ? 'Quitar bookmark' : 'Guardar tweet'}</span>
@@ -109,7 +109,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
                         setIsEditing(true);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
+                      className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 text-gray-900 dark:text-white"
                     >
                       <Edit3 className="h-4 w-4" />
                       <span>Editar tweet</span>
@@ -119,7 +119,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
                   {isOwnTweet && onDelete && (
                     <button
                       onClick={handleDelete}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2 text-red-600"
+                      className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                       <span>Eliminar tweet</span>
@@ -136,7 +136,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   rows={3}
                   maxLength={280}
                 />
@@ -146,21 +146,21 @@ const TweetCard: React.FC<TweetCardProps> = ({
                       setIsEditing(false);
                       setEditContent(tweet.content);
                     }}
-                    className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    className="px-3 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleEdit}
                     disabled={!editContent.trim() || editContent === tweet.content}
-                    className="px-3 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                   >
                     Guardar
                   </button>
                 </div>
               </div>
             ) : (
-              <p className="text-gray-900 text-base leading-relaxed">{tweet.content}</p>
+              <p className="text-gray-900 dark:text-white text-base leading-relaxed">{tweet.content}</p>
             )}
             
             {tweet.images && tweet.images.length > 0 && (
@@ -177,9 +177,9 @@ const TweetCard: React.FC<TweetCardProps> = ({
           <div className="flex items-center justify-between mt-4 max-w-md">
             <button
               onClick={() => onReply(tweet.id)}
-              className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 group transition-colors"
+              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 group transition-colors"
             >
-              <div className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
+              <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
                 <MessageCircle className="h-5 w-5" />
               </div>
               <span className="text-sm">{formatNumber(tweet.replies)}</span>
@@ -188,11 +188,11 @@ const TweetCard: React.FC<TweetCardProps> = ({
             <button
               onClick={() => onRetweet(tweet.id)}
               className={`flex items-center space-x-2 group transition-colors ${
-                tweet.retweeted ? 'text-green-500' : 'text-gray-500 hover:text-green-500'
+                tweet.retweeted ? 'text-green-500' : 'text-gray-500 dark:text-gray-400 hover:text-green-500'
               }`}
             >
-              <div className={`p-2 rounded-full group-hover:bg-green-50 transition-colors ${
-                tweet.retweeted ? 'bg-green-50' : ''
+              <div className={`p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20 transition-colors ${
+                tweet.retweeted ? 'bg-green-50 dark:bg-green-900/20' : ''
               }`}>
                 <Repeat className="h-5 w-5" />
               </div>
@@ -202,19 +202,19 @@ const TweetCard: React.FC<TweetCardProps> = ({
             <button
               onClick={() => onLike(tweet.id)}
               className={`flex items-center space-x-2 group transition-colors ${
-                tweet.liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                tweet.liked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
               }`}
             >
-              <div className={`p-2 rounded-full group-hover:bg-red-50 transition-colors ${
-                tweet.liked ? 'bg-red-50' : ''
+              <div className={`p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20 transition-colors ${
+                tweet.liked ? 'bg-red-50 dark:bg-red-900/20' : ''
               }`}>
                 <Heart className={`h-5 w-5 ${tweet.liked ? 'fill-current' : ''}`} />
               </div>
               <span className="text-sm">{formatNumber(tweet.likes)}</span>
             </button>
             
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 group transition-colors">
-              <div className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
+            <button className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 group transition-colors">
+              <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
                 <Share className="h-5 w-5" />
               </div>
             </button>

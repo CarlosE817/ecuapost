@@ -27,9 +27,9 @@ const Timeline: React.FC<TimelineProps> = ({
   bookmarkedTweets 
 }) => {
   return (
-    <div className="border-l border-r border-gray-200 min-h-screen">
-      <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 z-10">
-        <h1 className="text-xl font-bold text-gray-900">Inicio</h1>
+    <div className="border-l border-r border-gray-200 dark:border-gray-800 min-h-screen">
+      <div className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 p-4 z-10">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Inicio</h1>
       </div>
       
       <ComposeBox onTweet={onTweet} />

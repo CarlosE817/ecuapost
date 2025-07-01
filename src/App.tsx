@@ -13,8 +13,9 @@ import AuthModal from './components/AuthModal';
 import { tweets as initialTweets } from './data/mockData';
 import { Tweet, User } from './types';
 import { useAuth } from './hooks/useAuth';
+import { ThemeProvider } from './contexts/ThemeContext';
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState('home');
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [bookmarkedTweets, setBookmarkedTweets] = useState<string[]>([]);
@@ -231,17 +232,17 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center transition-colors">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando EcuaPost...</p>
+          <p className="text-gray-600 dark:text-gray-400">Cargando EcuaPost...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto flex">
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
         
@@ -272,6 +273,14 @@ function App() {
         onSuccess={handleAuthSuccess}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

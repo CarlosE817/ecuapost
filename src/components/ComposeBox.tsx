@@ -27,7 +27,7 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
   const userName = user?.displayName || 'Usuario';
 
   return (
-    <div className="border-b border-gray-200 p-4">
+    <div className="border-b border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-900">
       <form onSubmit={handleSubmit}>
         <div className="flex space-x-3">
           <img
@@ -40,7 +40,7 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="¿Qué está pasando?"
-              className="w-full text-xl placeholder-gray-500 border-none outline-none resize-none"
+              className="w-full text-xl placeholder-gray-500 dark:placeholder-gray-400 border-none outline-none resize-none bg-transparent text-gray-900 dark:text-white"
               rows={3}
             />
             
@@ -48,25 +48,25 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
               <div className="flex items-center space-x-4">
                 <button
                   type="button"
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                  className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
                 >
                   <Image className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                  className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
                 >
                   <Smile className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                  className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
                 >
                   <Calendar className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
-                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                  className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
                 >
                   <MapPin className="h-5 w-5" />
                 </button>
@@ -74,7 +74,7 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
               
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
-                  <div className={`text-sm ${isOverLimit ? 'text-red-500' : isNearLimit ? 'text-yellow-500' : 'text-gray-500'}`}>
+                  <div className={`text-sm ${isOverLimit ? 'text-red-500' : isNearLimit ? 'text-yellow-500' : 'text-gray-500 dark:text-gray-400'}`}>
                     {remainingChars}
                   </div>
                   <div className="w-8 h-8 relative">
@@ -106,8 +106,8 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
                   disabled={!content.trim() || isOverLimit}
                   className={`px-6 py-2 rounded-full font-bold transition-colors ${
                     !content.trim() || isOverLimit
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white'
                   }`}
                 >
                   Publicar

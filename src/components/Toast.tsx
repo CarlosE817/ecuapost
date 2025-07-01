@@ -27,11 +27,11 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
   const getBgColor = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200';
+        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       default:
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
     }
   };
 
@@ -39,10 +39,10 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
     <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
       <div className={`flex items-center space-x-3 p-4 rounded-lg border shadow-lg ${getBgColor()}`}>
         {getIcon()}
-        <span className="text-gray-900 font-medium">{message}</span>
+        <span className="text-gray-900 dark:text-white font-medium">{message}</span>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>

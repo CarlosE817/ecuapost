@@ -2,6 +2,7 @@ import React from 'react';
 import { Home, Search, Bell, Mail, Bookmark, User, Settings, Megaphone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import UserMenu from './UserMenu';
+import ThemeToggle from './ThemeToggle';
 
 interface SidebarProps {
   activeTab: string;
@@ -22,11 +23,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors">
       <div className="p-6">
-        <div className="flex items-center space-x-2">
-          <Megaphone className="h-8 w-8 text-blue-500" />
-          <span className="text-xl font-bold text-blue-600">EcuaPost</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Megaphone className="h-8 w-8 text-blue-500" />
+            <span className="text-xl font-bold text-blue-600 dark:text-blue-400">EcuaPost</span>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
       
@@ -39,8 +43,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
               onClick={() => onTabChange(item.id)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-full transition-colors ${
                 activeTab === item.id
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'hover:bg-gray-100 text-gray-700'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               <Icon className="h-6 w-6" />
@@ -51,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
       </nav>
       
       <div className="p-4 space-y-4">
-        <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition-colors">
+        <button className="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-colors">
           Publicar
         </button>
         
