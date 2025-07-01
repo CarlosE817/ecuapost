@@ -17,9 +17,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const { signInWithGoogle, signInWithFacebook, signInWithPhone } = useAuth();
+  const { signInWithGoogle, signInWithFacebook, signInWithPhone, error } = useAuth();
 
   useEffect(() => {
     if (isOpen && authMode === 'phone' && !recaptchaVerifier) {
@@ -45,12 +44,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       await signInWithGoogle();
       onSuccess();
       onClose();
     } catch (error: any) {
-      setError('Error al iniciar sesión con Google. Inténtalo de nuevo.');
+      // Error is handled by useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -59,12 +57,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleFacebookSignIn = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       await signInWithFacebook();
       onSuccess();
       onClose();
     } catch (error: any) {
-      setError('Error al iniciar sesión con Facebook. Inténtalo de nuevo.');
+      // Error is handled by useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -72,19 +69,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
   const handlePhoneSignIn = async () => {
     if (!recaptchaVerifier) {
-      setError('reCAPTCHA no está listo. Inténtalo de nuevo.');
       return;
     }
 
     try {
       setIsLoading(true);
-      setError(null);
       const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+593${phoneNumber}`;
       const confirmation = await signInWithPhone(formattedPhone, recaptchaVerifier);
       setConfirmationResult(confirmation);
       setAuthMode('verify');
     } catch (error: any) {
-      setError('Error al enviar código de verificación. Verifica el número.');
+      // Error is handled by useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -95,12 +90,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
     try {
       setIsLoading(true);
-      setError(null);
       await confirmationResult.confirm(verificationCode);
       onSuccess();
       onClose();
     } catch (error: any) {
-      setError('Código de verificación incorrecto. Inténtalo de nuevo.');
+      // Error is handled by useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +105,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
     setPhoneNumber('');
     setVerificationCode('');
     setConfirmationResult(null);
-    setError(null);
     if (recaptchaVerifier) {
       recaptchaVerifier.clear();
       setRecaptchaVerifier(null);
