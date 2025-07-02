@@ -52,14 +52,16 @@ export const useTweets = (authUser: any, showToast: (message: string, type?: 'su
           timestamp: new Date(tweet.timestamp),
         }));
         setTweets(parsedTweets);
-        console.log(`Loaded ${parsedTweets.length} tweets from localStorage.`);
+        console.log(`Loaded ${parsedTweets.length} tweets from localStorage. First tweet author: ${parsedTweets.length > 0 ? parsedTweets[0].user.displayName : 'N/A'}`);
       } catch (error) {
         console.error('Error loading tweets from localStorage:', error);
         setTweets(initialTweetsData);
+        console.log(`Fallback to initialTweetsData due to localStorage error. Loaded ${initialTweetsData.length} mock tweets. First mock tweet author: ${initialTweetsData.length > 0 ? initialTweetsData[0].user.displayName : 'N/A'}`);
       }
     } else {
       console.log('No tweets found in localStorage, loading initial mock data.');
       setTweets(initialTweetsData);
+      console.log(`Loaded ${initialTweetsData.length} mock tweets. First mock tweet author: ${initialTweetsData.length > 0 ? initialTweetsData[0].user.displayName : 'N/A'}`);
     }
   }, []);
 
@@ -105,10 +107,11 @@ export const useTweets = (authUser: any, showToast: (message: string, type?: 'su
               (snapshot) => {
                 // Optional: handle progress (snapshot.bytesTransferred / snapshot.totalBytes) * 100
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log(`Subiendo ${imageFile.name}: ${progress.toFixed(2)}%`);
+                console.log(`Subiendo ${imageFile.name} a ${storageRef.fullPath}: ${progress.toFixed(2)}%`);
               },
-              (error) => {
-                console.error('Error subiendo imagen:', error);
+              (error) => { // Firebase Storage Error object often has a 'code' property
+                console.error(`Error subiendo imagen (${imageFile.name}):`, error);
+                console.error(`Detalles del error de subida (código: ${error.code}): ${error.message}`);
                 reject(error);
               },
               async () => {
