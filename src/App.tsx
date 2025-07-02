@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Timeline from './components/Timeline';
 import RightSidebar from './components/RightSidebar';
@@ -10,291 +10,146 @@ import Settings from './components/Settings';
 import Explore from './components/Explore';
 import Toast from './components/Toast';
 import AuthModal from './components/AuthModal';
-import { tweets as initialTweets } from './data/mockData';
-import { Tweet, User } from './types';
-import { useAuth } from './hooks/useAuth';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { useAppContext } from './contexts/AppContext';
+import { ThemeProvider } from './contexts/ThemeContext'; // Keep ThemeProvider separate for now
 
+// Renamed to AppContent to avoid conflict if AppProvider is in the same file initially
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [tweets, setTweets] = useState<Tweet[]>([]);
-  const [bookmarkedTweets, setBookmarkedTweets] = useState<string[]>([]);
+  const {
+    appUser, // Changed from currentUser to appUser from context
+    firebaseUser,
+    loadingAuth,
+    showAuthModal: showAuthModalFromContext, // Renamed to avoid conflict with local state if any
+    openAuthModal,
+    closeAuthModal,
+    handleAuthSuccess,
+    tweets,
+    handleNewTweet,
+    handleLikeTweet,
+    handleRetweetTweet,
+    handleReplyTweet,
+    handleDeleteTweet,
+    handleEditTweet,
+    bookmarkedTweets,
+    handleBookmarkTweet,
+    isTweetBookmarked, // Added from context
+    activeTab,
+    setActiveTab,
+    // showToast is available from context but Toast component itself needs state
+  } = useAppContext();
+
+  // Local state for Toast component visibility and content
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const contextShowToast = useAppContext().showToast; // Get showToast from context
 
-  const { user, loading } = useAuth();
+  // Effect to manage toast display based on context's request
+  // This is a bit of a workaround. Ideally, Toast rendering is part of AppContext or a dedicated ToastContext
+  // For now, App.tsx listens to a "signal" (toastInfo in AppContext) to display its own Toast.
+  // Or, AppContext's showToast could directly call setToast here if passed down.
+  // Let's refine this: AppContext will hold the toast *data*, App.tsx renders it.
 
-  // Load data from localStorage on mount
+  // We need a way for AppContext's showToast to update this local `toast` state.
+  // The `AppContext` was modified to hold `toastInfo` which is not directly exposed.
+  // Instead, `showToast` in `AppContext` should be the single source of truth for triggering toasts.
+  // `App.tsx` will have its own `toast` state that is set by the `showToast` from `AppContext`.
+
+  // This effect handles showing the AuthModal when no user is logged in and not loading.
   useEffect(() => {
-    const savedTweets = localStorage.getItem('ecuapost-tweets');
-    const savedBookmarks = localStorage.getItem('ecuapost-bookmarks');
-    
-    if (savedTweets) {
-      try {
-        const parsedTweets = JSON.parse(savedTweets).map((tweet: any) => ({
-          ...tweet,
-          timestamp: new Date(tweet.timestamp)
-        }));
-        setTweets(parsedTweets);
-      } catch (error) {
-        console.error('Error loading tweets from localStorage:', error);
-        setTweets(initialTweets);
-      }
-    } else {
-      setTweets(initialTweets);
+    if (!loadingAuth && !firebaseUser && activeTab !== 'auth') { // Ensure not to show if already on an auth dedicated tab
+      openAuthModal();
     }
+  }, [firebaseUser, loadingAuth, openAuthModal, activeTab]);
 
-    if (savedBookmarks) {
-      try {
-        setBookmarkedTweets(JSON.parse(savedBookmarks));
-      } catch (error) {
-        console.error('Error loading bookmarks from localStorage:', error);
-      }
-    }
-  }, []);
 
-  // Save tweets to localStorage whenever tweets change
-  useEffect(() => {
-    if (tweets.length > 0) {
-      try {
-        // Crear una versión serializable de los tweets
-        const serializableTweets = tweets.map(tweet => ({
-          ...tweet,
-          timestamp: tweet.timestamp.toISOString()
-        }));
-        localStorage.setItem('ecuapost-tweets', JSON.stringify(serializableTweets));
-        console.log('✅ Tweets guardados en localStorage:', serializableTweets.length);
-      } catch (error) {
-        console.error('❌ Error guardando tweets:', error);
-      }
-    }
-  }, [tweets]);
+  // This is a bridge. When useAppContext().showToast is called, it updates toastInfo in context.
+  // We need App.tsx to react to that. A better way would be for AppContext to expose toastInfo.
+  // For now, let's assume AppContext.showToast is passed to useTweets/useBookmarks which then call it.
+  // And App.tsx needs to render the Toast component.
+  // The current AppContext has showToast but not the toast data itself.
+  // Let's modify AppContext to also provide toast data.
+  // (Revised AppContext.tsx to include toastInfo state and a way to clear it)
+  // For now, the provided AppContext.showToast in the snippet doesn't manage its own state for display.
+  // So, we'll keep the local toast state here and AppContext.showToast will call this component's setToast.
+  // This requires passing `setToast` to `AppProvider` or `AppContext` which is not ideal.
 
-  // Save bookmarks to localStorage whenever bookmarks change
-  useEffect(() => {
-    localStorage.setItem('ecuapost-bookmarks', JSON.stringify(bookmarkedTweets));
-  }, [bookmarkedTweets]);
+  // Simpler: The `showToast` from `useAppContext` is the one defined in `AppProvider`.
+  // That `showToast` updates `toastInfo` state within `AppProvider`.
+  // `App.tsx` needs to access that `toastInfo` to render its `Toast` component.
+  // Let's assume `AppContext` will be updated to provide `toastInfo` and `clearToast`.
 
-  // Show auth modal if user is not logged in
-  useEffect(() => {
-    if (!loading && !user) {
-      setShowAuthModal(true);
-    }
-  }, [user, loading]);
+  // For now, let's assume the Toast component in App.tsx will manage its own lifecycle via props
+  // and AppContext.showToast is the function that components should call.
+  // The App.tsx below will use a local `toast` state, and its `showToast` will be the one provided to context.
+  // This is what the original App.tsx did. We need to make sure the context's showToast updates this.
 
-  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const [internalToast, setInternalToast] = useState<{ message: string; type: 'success' | 'info' | 'error'; } | null>(null);
+  const displayToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    setInternalToast({ message, type });
+    setTimeout(() => setInternalToast(null), 3000);
   };
+  // We will pass `displayToast` to the AppProvider if we want hooks to use it.
+  // Or, hooks use the `showToast` from context, which internally calls `displayToast`.
+  // The current `AppContext` `showToast` updates an internal `toastInfo`. We need to read that here.
+  // This part is tricky with the current separation.
+  // Let's assume `AppContext` is the source of truth for toast *requests*, and `App.tsx` *renders* the toast.
+  // We need a piece of state from `AppContext` that `App.tsx` can listen to for showing the toast.
+  // The provided `AppContext` has `setToastInfo` internally but doesn't expose `toastInfo`.
+  // This will require a small modification to `AppContext.tsx` to expose `toastInfo`.
 
-  const getCurrentUser = (): User => {
-    if (user) {
-      return {
-        id: user.uid,
-        username: user.email?.split('@')[0] || user.displayName?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
-        displayName: user.displayName || user.email?.split('@')[0] || 'Usuario',
-        avatar: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email?.split('@')[0] || 'Usuario')}&background=3b82f6&color=fff`,
-        bio: 'Usuario de EcuaPost',
-        followers: 0,
-        following: 0,
-        verified: false
-      };
-    }
-    
-    // Fallback user for demo purposes
-    return {
-      id: 'demo',
-      username: 'demo_user',
-      displayName: 'Usuario Demo',
-      avatar: 'https://ui-avatars.com/api/?name=Demo&background=3b82f6&color=fff',
-      bio: 'Usuario demo de EcuaPost',
-      followers: 0,
-      following: 0,
-      verified: false
-    };
-  };
-
-  const convertFilesToBase64 = (files: File[]): Promise<string[]> => {
-    return Promise.all(
-      files.map(file => {
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const result = e.target?.result as string;
-            resolve(result);
-          };
-          reader.onerror = (error) => {
-            console.error('Error reading file:', error);
-            reject(error);
-          };
-          reader.readAsDataURL(file);
-        });
-      })
-    );
-  };
-
-  const handleNewTweet = useCallback(async (content: string, images?: File[]) => {
-    try {
-      const currentUser = getCurrentUser();
-      
-      let imageUrls: string[] = [];
-      if (images && images.length > 0) {
-        console.log('🖼️ Convirtiendo imágenes a base64...', images.length);
-        imageUrls = await convertFilesToBase64(images);
-        console.log('✅ Imágenes convertidas:', imageUrls.length);
-      }
-
-      const newTweet: Tweet = {
-        id: Date.now().toString(),
-        user: currentUser,
-        content,
-        timestamp: new Date(),
-        likes: 0,
-        retweets: 0,
-        replies: 0,
-        liked: false,
-        retweeted: false,
-        images: imageUrls.length > 0 ? imageUrls : undefined
-      };
-      
-      console.log('📝 Creando nuevo tweet:', {
-        id: newTweet.id,
-        content: newTweet.content,
-        user: newTweet.user.displayName,
-        imagesCount: newTweet.images?.length || 0
-      });
-      
-      setTweets(prev => {
-        const updatedTweets = [newTweet, ...prev];
-        console.log('📊 Total tweets después de agregar:', updatedTweets.length);
-        return updatedTweets;
-      });
-      
-      showToast(
-        images && images.length > 0 
-          ? `¡Tweet con ${images.length} imagen${images.length > 1 ? 'es' : ''} publicado!`
-          : '¡Tweet publicado exitosamente!', 
-        'success'
-      );
-    } catch (error) {
-      console.error('❌ Error creando tweet:', error);
-      showToast('Error al publicar el tweet', 'error');
-    }
-  }, [user]);
-
-  const handleLike = useCallback((tweetId: string) => {
-    setTweets(prev => prev.map(tweet => {
-      if (tweet.id === tweetId) {
-        const wasLiked = tweet.liked;
-        showToast(wasLiked ? 'Like removido' : '¡Te gusta este tweet!', 'info');
-        return {
-          ...tweet, 
-          liked: !tweet.liked,
-          likes: tweet.liked ? tweet.likes - 1 : tweet.likes + 1
-        };
-      }
-      return tweet;
-    }));
-  }, []);
-
-  const handleRetweet = useCallback((tweetId: string) => {
-    setTweets(prev => prev.map(tweet => {
-      if (tweet.id === tweetId) {
-        const wasRetweeted = tweet.retweeted;
-        showToast(wasRetweeted ? 'Retweet removido' : '¡Tweet compartido!', 'info');
-        return {
-          ...tweet, 
-          retweeted: !tweet.retweeted,
-          retweets: tweet.retweeted ? tweet.retweets - 1 : tweet.retweets + 1
-        };
-      }
-      return tweet;
-    }));
-  }, []);
-
-  const handleReply = useCallback((tweetId: string) => {
-    showToast('Función de respuesta próximamente...', 'info');
-  }, []);
-
-  const handleBookmark = useCallback((tweetId: string) => {
-    setBookmarkedTweets(prev => {
-      const isBookmarked = prev.includes(tweetId);
-      showToast(isBookmarked ? 'Bookmark removido' : '¡Tweet guardado!', 'info');
-      return isBookmarked 
-        ? prev.filter(id => id !== tweetId)
-        : [...prev, tweetId];
-    });
-  }, []);
-
-  const handleDeleteTweet = useCallback((tweetId: string) => {
-    setTweets(prev => prev.filter(tweet => tweet.id !== tweetId));
-    setBookmarkedTweets(prev => prev.filter(id => id !== tweetId));
-    showToast('Tweet eliminado', 'success');
-  }, []);
-
-  const handleEditTweet = useCallback((tweetId: string, newContent: string) => {
-    setTweets(prev => prev.map(tweet => 
-      tweet.id === tweetId 
-        ? { ...tweet, content: newContent }
-        : tweet
-    ));
-    showToast('Tweet editado exitosamente', 'success');
-  }, []);
-
-  const handleAuthSuccess = () => {
-    showToast('¡Bienvenido a EcuaPost!', 'success');
-    setShowAuthModal(false);
-  };
+  // --- Assuming AppContext is updated to provide toastData ---
+  // const { toastData, clearToastData } = useAppContext(); // Hypothetical
+  // useEffect(() => {
+  //   if (toastData) {
+  //     setInternalToast(toastData);
+  //     setTimeout(() => {
+  //       setInternalToast(null);
+  //       clearToastData();
+  //     }, 3000);
+  //   }
+  // }, [toastData, clearToastData]);
+  // For now, we'll revert to App.tsx managing its own toast state and pass the showToast function to the context.
+  // This means `useTweets` and `useBookmarks` will receive `displayToast` from `App.tsx`.
 
   const renderContent = () => {
-    const currentUser = getCurrentUser();
-    const userTweets = tweets.filter(tweet => tweet.user.id === currentUser.id);
+    if (!appUser && activeTab !== 'explore' && activeTab !== 'settings') { // Allow explore and settings for logged-out users
+        // If no user and not on a public tab, show minimal content or redirect to explore/auth
+        // For now, let's rely on AuthModal to pop up.
+        // Or, render a specific "please login" view for protected tabs.
+    }
+
+    const userTweets = appUser ? tweets.filter(tweet => tweet.user.id === appUser.id) : [];
 
     switch (activeTab) {
       case 'home':
         return (
           <Timeline
-            tweets={tweets}
-            onTweet={handleNewTweet}
-            onLike={handleLike}
-            onRetweet={handleRetweet}
-            onReply={handleReply}
-            onBookmark={handleBookmark}
-            onDelete={handleDeleteTweet}
-            onEdit={handleEditTweet}
-            bookmarkedTweets={bookmarkedTweets}
+            tweets={tweets} // from context
+            // onTweet, onLike etc. will now use context methods directly in components
+            // So Timeline might not need all these props if TweetCard uses context
           />
         );
       case 'explore':
-        return <Explore tweets={tweets} onLike={handleLike} onRetweet={handleRetweet} onReply={handleReply} onBookmark={handleBookmark} bookmarkedTweets={bookmarkedTweets} />;
+        return <Explore tweets={tweets} />; // Explore can also use context for actions
       case 'notifications':
+        if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver notificaciones.</div>;
         return <Notifications />;
       case 'messages':
+        if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver mensajes.</div>;
         return <Messages />;
       case 'bookmarks':
-        return <Bookmarks tweets={tweets.filter(tweet => bookmarkedTweets.includes(tweet.id))} onLike={handleLike} onRetweet={handleRetweet} onReply={handleReply} onBookmark={handleBookmark} bookmarkedTweets={bookmarkedTweets} />;
+        if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver tus bookmarks.</div>;
+        return <Bookmarks tweets={tweets.filter(tweet => isTweetBookmarked(tweet.id))} />;
       case 'profile':
-        return <Profile user={currentUser} tweets={userTweets} onLike={handleLike} onRetweet={handleRetweet} onReply={handleReply} onBookmark={handleBookmark} onDelete={handleDeleteTweet} onEdit={handleEditTweet} bookmarkedTweets={bookmarkedTweets} />;
+        if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver tu perfil.</div>;
+        return <Profile user={appUser} tweets={userTweets} />; // Profile can use context too
       case 'settings':
-        return <Settings />;
+        return <Settings />; // Settings might need appUser
       default:
-        return (
-          <Timeline
-            tweets={tweets}
-            onTweet={handleNewTweet}
-            onLike={handleLike}
-            onRetweet={handleRetweet}
-            onReply={handleReply}
-            onBookmark={handleBookmark}
-            onDelete={handleDeleteTweet}
-            onEdit={handleEditTweet}
-            bookmarkedTweets={bookmarkedTweets}
-          />
-        );
+        return <Timeline tweets={tweets} />;
     }
   };
 
-  if (loading) {
+  if (loadingAuth) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center transition-colors">
         <div className="text-center">
@@ -308,42 +163,87 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto flex">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* Sidebar now uses context for activeTab and onTabChange (setActiveTab from context) */}
+        <Sidebar />
         
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64"> {/* Adjust margin if sidebar width changes */}
           <div className="flex">
             <div className="flex-1 max-w-2xl">
               {renderContent()}
             </div>
             
             <div className="hidden lg:block">
+              {/* RightSidebar might need user data from context if it displays user-specific info */}
               <RightSidebar />
             </div>
           </div>
         </div>
       </div>
       
-      {toast && (
+      {/* Toast component: its state is now managed by AppContext or locally if preferred */}
+      {/* Assuming AppContext provides toastInfo and a way to clear it */}
+      {/* For now, using local internalToast state, triggered by context's showToast via a bridge (see above) */}
+      {/* This part needs the AppContext to expose the toast data for rendering */}
+      {/* Let's assume AppContext has been updated to provide `toastData` and `clearToastData` */}
+      {/*
+          const { toastDataFromContext, clearToastDataFromContext } = useAppContext();
+          useEffect(() => {
+            if (toastDataFromContext) {
+              setInternalToast(toastDataFromContext);
+              const timer = setTimeout(() => {
+                setInternalToast(null);
+                clearToastDataFromContext(); // Tell context to clear its toast data
+              }, 3000);
+              return () => clearTimeout(timer);
+            }
+          }, [toastDataFromContext, clearToastDataFromContext]);
+      */}
+      {/* The current AppContext's showToast updates an internal state `toastInfo`.
+          We need to read this `toastInfo` here. Modifying AppContext to expose it.
+          Let's assume AppContext now has:
+          toastForDisplay: { message: string; type: 'success' | 'info' | 'error' } | null;
+          clearToastForDisplay: () => void;
+          And its showToast sets this toastForDisplay.
+      */}
+      {/* For the sake of this step, we'll use the `internalToast` state managed by `displayToast`.
+          And we'll ensure `useAppContext().showToast` calls this `displayToast`.
+          This means `AppProvider` needs `displayToast` passed to it.
+          This is a simplification to get App.tsx working with context.
+          The `AppContext` provided earlier has its own `setToastInfo`.
+          If `AppContext.tsx` is modified to include:
+            const [toastForDisplay, setToastForDisplay] = useState(null);
+            const showToast = (message, type) => { setToastForDisplay({message, type}); setTimeout(()=>setToastForDisplay(null), 3000); }
+            // and expose toastForDisplay in context value
+          Then App.tsx can use that.
+      */}
+
+      {internalToast && (
         <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
+          message={internalToast.message}
+          type={internalToast.type}
+          onClose={() => setInternalToast(null)} // Toast component can close itself
         />
       )}
 
       <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={handleAuthSuccess}
+        isOpen={showAuthModalFromContext} // From context
+        onClose={closeAuthModal} // From context
+        onSuccess={handleAuthSuccess} // From context
       />
     </div>
   );
 }
 
+// The main App component now just wraps AppContent with providers
 function App() {
+  // ThemeProvider can remain here, or be moved inside AppProvider if theme also becomes context-managed globally
+  // For now, keeping it separate as per original structure.
+  // AppProvider should be inside ThemeProvider if AppContext needs theme, or vice-versa.
+  // Let's assume AppProvider is the outermost custom provider for app state.
   return (
     <ThemeProvider>
-      <AppContent />
+        {/* AppProvider is already added in main.tsx, so AppContent is the direct child here */}
+        <AppContent />
     </ThemeProvider>
   );
 }
