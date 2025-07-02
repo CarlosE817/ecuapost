@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield, AlertCircle } from 'lucide-react';
+import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield, AlertCircle, Smartphone, Monitor } from 'lucide-react';
 import { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -17,8 +17,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState<'popup' | 'redirect'>('redirect');
 
   const { signInWithGoogle, signInWithFacebook, signInWithPhone, error } = useAuth();
+
+  // Detectar tipo de dispositivo
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   useEffect(() => {
     if (isOpen && authMode === 'phone' && !recaptchaVerifier) {
@@ -44,19 +48,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
+      console.log(`🚀 Iniciando Google Sign-In (método: ${authMethod})`);
+      
       const result = await signInWithGoogle();
       
-      // Si result es null, significa que se usó redirect
       if (result) {
+        // Popup exitoso
+        console.log('✅ Login exitoso con popup');
         onSuccess();
         onClose();
       } else {
-        // Con redirect, la página se recargará automáticamente
-        // No necesitamos hacer nada aquí
+        // Redirect iniciado - la página se recargará automáticamente
+        console.log('🔄 Redirect iniciado, esperando recarga...');
+        // No cerramos el modal aquí porque la página se va a recargar
       }
     } catch (error: any) {
-      // Error is handled by useAuth hook
-      console.log('Error manejado por useAuth hook');
+      console.error('❌ Error en Google Sign-In:', error);
+      // El error ya se maneja en useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -65,15 +73,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleFacebookSignIn = async () => {
     try {
       setIsLoading(true);
+      console.log(`🚀 Iniciando Facebook Sign-In (método: ${authMethod})`);
+      
       const result = await signInWithFacebook();
       
       if (result) {
+        console.log('✅ Login exitoso con popup');
         onSuccess();
         onClose();
+      } else {
+        console.log('🔄 Redirect iniciado, esperando recarga...');
       }
     } catch (error: any) {
-      // Error is handled by useAuth hook
-      console.log('Error manejado por useAuth hook');
+      console.error('❌ Error en Facebook Sign-In:', error);
     } finally {
       setIsLoading(false);
     }
@@ -159,6 +171,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             </button>
           </div>
 
+          {/* Información del método de autenticación */}
+          {(authMode === 'login' || authMode === 'register') && (
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-start space-x-2">
+                {isMobile ? <Smartphone className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" /> : <Monitor className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />}
+                <div>
+                  <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">
+                    {isMobile ? 'Dispositivo móvil detectado' : 'Dispositivo desktop detectado'}
+                  </p>
+                  <p className="text-blue-600 dark:text-blue-400 text-sm">
+                    {isMobile 
+                      ? 'Se usará redirección para mejor compatibilidad'
+                      : 'Se intentará ventana emergente, con redirección como respaldo'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <div className="flex items-start space-x-2">
@@ -170,9 +202,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                     <div className="mt-2 text-xs text-red-500">
                       <p>💡 <strong>Solución:</strong></p>
                       <ul className="list-disc list-inside space-y-1 mt-1">
-                        <li>Permite popups en tu navegador</li>
-                        <li>Desactiva bloqueadores de anuncios temporalmente</li>
-                        <li>Si persiste, se usará redirección automática</li>
+                        <li>Se usará redirección automáticamente</li>
+                        <li>La página se recargará tras el login</li>
+                        <li>Es normal en dispositivos móviles</li>
                       </ul>
                     </div>
                   )}
