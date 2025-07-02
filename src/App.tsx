@@ -55,7 +55,19 @@ function AppContent() {
 
   // Save tweets to localStorage whenever tweets change
   useEffect(() => {
-    localStorage.setItem('ecuapost-tweets', JSON.stringify(tweets));
+    if (tweets.length > 0) {
+      try {
+        // Crear una versión serializable de los tweets
+        const serializableTweets = tweets.map(tweet => ({
+          ...tweet,
+          timestamp: tweet.timestamp.toISOString()
+        }));
+        localStorage.setItem('ecuapost-tweets', JSON.stringify(serializableTweets));
+        console.log('✅ Tweets guardados en localStorage:', serializableTweets.length);
+      } catch (error) {
+        console.error('❌ Error guardando tweets:', error);
+      }
+    }
   }, [tweets]);
 
   // Save bookmarks to localStorage whenever bookmarks change
@@ -102,13 +114,18 @@ function AppContent() {
     };
   };
 
-  const convertFilesToUrls = (files: File[]): Promise<string[]> => {
+  const convertFilesToBase64 = (files: File[]): Promise<string[]> => {
     return Promise.all(
       files.map(file => {
-        return new Promise<string>((resolve) => {
+        return new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
-            resolve(e.target?.result as string);
+            const result = e.target?.result as string;
+            resolve(result);
+          };
+          reader.onerror = (error) => {
+            console.error('Error reading file:', error);
+            reject(error);
           };
           reader.readAsDataURL(file);
         });
@@ -117,33 +134,51 @@ function AppContent() {
   };
 
   const handleNewTweet = useCallback(async (content: string, images?: File[]) => {
-    const currentUser = getCurrentUser();
-    
-    let imageUrls: string[] = [];
-    if (images && images.length > 0) {
-      imageUrls = await convertFilesToUrls(images);
-    }
+    try {
+      const currentUser = getCurrentUser();
+      
+      let imageUrls: string[] = [];
+      if (images && images.length > 0) {
+        console.log('🖼️ Convirtiendo imágenes a base64...', images.length);
+        imageUrls = await convertFilesToBase64(images);
+        console.log('✅ Imágenes convertidas:', imageUrls.length);
+      }
 
-    const newTweet: Tweet = {
-      id: Date.now().toString(),
-      user: currentUser,
-      content,
-      timestamp: new Date(),
-      likes: 0,
-      retweets: 0,
-      replies: 0,
-      liked: false,
-      retweeted: false,
-      images: imageUrls.length > 0 ? imageUrls : undefined
-    };
-    
-    setTweets(prev => [newTweet, ...prev]);
-    showToast(
-      images && images.length > 0 
-        ? `¡Tweet con ${images.length} imagen${images.length > 1 ? 'es' : ''} publicado!`
-        : '¡Tweet publicado exitosamente!', 
-      'success'
-    );
+      const newTweet: Tweet = {
+        id: Date.now().toString(),
+        user: currentUser,
+        content,
+        timestamp: new Date(),
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        liked: false,
+        retweeted: false,
+        images: imageUrls.length > 0 ? imageUrls : undefined
+      };
+      
+      console.log('📝 Creando nuevo tweet:', {
+        id: newTweet.id,
+        content: newTweet.content,
+        imagesCount: newTweet.images?.length || 0
+      });
+      
+      setTweets(prev => {
+        const updatedTweets = [newTweet, ...prev];
+        console.log('📊 Total tweets después de agregar:', updatedTweets.length);
+        return updatedTweets;
+      });
+      
+      showToast(
+        images && images.length > 0 
+          ? `¡Tweet con ${images.length} imagen${images.length > 1 ? 'es' : ''} publicado!`
+          : '¡Tweet publicado exitosamente!', 
+        'success'
+      );
+    } catch (error) {
+      console.error('❌ Error creando tweet:', error);
+      showToast('Error al publicar el tweet', 'error');
+    }
   }, [user]);
 
   const handleLike = useCallback((tweetId: string) => {
