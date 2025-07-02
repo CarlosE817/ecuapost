@@ -160,6 +160,27 @@ function AppContent() {
     );
   }
 
+  // Si no hay usuario y la autenticación no está cargando, solo mostrar el AuthModal
+  if (!loadingAuth && !firebaseUser) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors flex items-center justify-center">
+        <AuthModal
+          isOpen={true} // Forzar apertura ya que es la única vista
+          onClose={() => {
+            // Idealmente, el modal no debería cerrarse si es la única vista y no hay login.
+            // O, si se cierra, debería reabrirse o mostrar un mensaje.
+            // Por ahora, si se cierra sin login, el useEffect lo reabrirá.
+            // Podríamos pasar una prop para deshabilitar el botón de cierre si !firebaseUser.
+            // O simplemente dejar que el useEffect lo maneje.
+            closeAuthModal();
+          }}
+          onSuccess={handleAuthSuccess}
+        />
+        {/* Se puede añadir un mensaje de "Debes iniciar sesión" aquí si el modal no es suficiente */}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto flex">

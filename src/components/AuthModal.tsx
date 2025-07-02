@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield, AlertCircle, Smartphone, Monitor, Eye, EyeOff } from 'lucide-react';
+import { X, Mail, Phone, Chrome, ArrowLeft, Shield, AlertCircle, Smartphone, Monitor, Eye, EyeOff } from 'lucide-react';
 import { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -22,7 +22,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signInWithGoogle, signInWithFacebook, signInWithPhone, signUpWithEmail, signInWithEmail, error } = useAuth();
+  const { signInWithGoogle, signInWithPhone, signUpWithEmail, signInWithEmail, error } = useAuth();
 
   // Detectar tipo de dispositivo
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -64,27 +64,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
       }
     } catch (error: any) {
       console.error('❌ Error en Google Sign-In:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    try {
-      setIsLoading(true);
-      console.log(`🚀 Iniciando Facebook Sign-In`);
-      
-      const result = await signInWithFacebook();
-      
-      if (result) {
-        console.log('✅ Login exitoso con popup');
-        onSuccess();
-        onClose();
-      } else {
-        console.log('🔄 Redirect iniciado, esperando recarga...');
-      }
-    } catch (error: any) {
-      console.error('❌ Error en Facebook Sign-In:', error);
     } finally {
       setIsLoading(false);
     }
@@ -258,17 +237,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
               </button>
 
               <button
-                onClick={handleFacebookSignIn}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Facebook className="h-5 w-5" />
-                <span className="font-medium">
-                  {isLoading ? 'Conectando...' : 'Continuar con Facebook'}
-                </span>
-              </button>
-
-              <button
                 onClick={() => setAuthMode('email-login')}
                 disabled={isLoading}
                 className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
@@ -314,17 +282,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 <Chrome className="h-5 w-5 text-blue-500" />
                 <span className="font-medium text-gray-900 dark:text-white">
                   {isLoading ? 'Conectando...' : 'Registrarse con Google'}
-                </span>
-              </button>
-
-              <button
-                onClick={handleFacebookSignIn}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Facebook className="h-5 w-5" />
-                <span className="font-medium">
-                  {isLoading ? 'Conectando...' : 'Registrarse con Facebook'}
                 </span>
               </button>
 

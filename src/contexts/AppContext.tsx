@@ -38,12 +38,25 @@ interface AppContextType {
 
   // Current User Profile (derived from firebaseUser)
   appUser: User | null;
+
+  // Profile update
+  updateUserProfilePicture: (userId: string, file: File) => Promise<string | null>;
+  loadingProfileUpdate: boolean; // Specific loading state for this operation
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user: firebaseUser, loading: loadingAuth } = useAuth(); // from Firebase
+  const {
+    user: firebaseUser,
+    loading: loadingAuth, // This is general auth loading (initial load, sign-in, etc.)
+    updateUserProfilePicture, // Function from useAuth
+    error: authError // We might need to expose authError too
+  } = useAuth();
+
+  // Specific loading state for profile picture update, separate from general loadingAuth
+  const [loadingProfileUpdate, setLoadingProfileUpdate] = useState(false);
+
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null); // For internal toast state
   const [activeTab, setActiveTab] = useState('home');
@@ -108,6 +121,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     activeTab,
     setActiveTab,
     appUser,
+    updateUserProfilePicture: async (userId: string, file: File) => {
+      setLoadingProfileUpdate(true);
+      try {
+        const result = await updateUserProfilePicture(userId, file); // Call the original function
+        // onAuthStateChanged should update firebaseUser, which updates appUser.
+        // If immediate feedback is needed beyond toast, appUser could be manually updated here,
+        // but it's generally better to rely on the auth state flow.
+        setLoadingProfileUpdate(false);
+        return result;
+      } catch (error) {
+        setLoadingProfileUpdate(false);
+        // The error should be handled by useAuth and shown via its error state or a toast
+        console.error("Error en AppContext al actualizar foto:", error);
+        throw error; // Re-throw para que el componente que llama pueda manejarlo si es necesario
+      }
+    },
+    loadingProfileUpdate,
   };
 
   return (

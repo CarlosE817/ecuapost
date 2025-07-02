@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getStorage } from 'firebase/storage'; // Import getStorage
 
 // Configuración de Firebase con tus credenciales reales
@@ -24,13 +24,11 @@ export const storage = getStorage(app); // Initialize Firebase Storage
 
 // Proveedores de autenticación
 export const googleProvider = new GoogleAuthProvider();
-export const facebookProvider = new FacebookAuthProvider();
 
 // Configurar proveedores
 googleProvider.addScope('profile');
 googleProvider.addScope('email');
 
-facebookProvider.addScope('email');
-facebookProvider.addScope('public_profile');
+// PhoneAuthProvider no necesita configuración de scope aquí, se maneja en el flujo de reCAPTCHA.
 
 export default app;
