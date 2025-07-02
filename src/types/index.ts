@@ -20,4 +20,5 @@ export interface Tweet {
   liked?: boolean;
   retweeted?: boolean;
   images?: string[];
+  imageFiles?: File[];
 }

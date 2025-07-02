@@ -5,7 +5,7 @@ import ComposeBox from './ComposeBox';
 
 interface TimelineProps {
   tweets: Tweet[];
-  onTweet: (content: string) => void;
+  onTweet: (content: string, images?: File[]) => void;
   onLike: (tweetId: string) => void;
   onRetweet: (tweetId: string) => void;
   onReply: (tweetId: string) => void;

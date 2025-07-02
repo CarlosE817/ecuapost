@@ -64,6 +64,83 @@ const TweetCard: React.FC<TweetCardProps> = ({
     setShowMenu(false);
   };
 
+  const renderImages = () => {
+    if (!tweet.images || tweet.images.length === 0) return null;
+
+    const imageCount = tweet.images.length;
+
+    if (imageCount === 1) {
+      return (
+        <div className="mt-3 rounded-2xl overflow-hidden">
+          <img
+            src={tweet.images[0]}
+            alt="Tweet image"
+            className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={() => window.open(tweet.images![0], '_blank')}
+          />
+        </div>
+      );
+    }
+
+    if (imageCount === 2) {
+      return (
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden">
+          {tweet.images.map((image, index) => (
+            <img
+              key={index}
+              src={image}
+              alt={`Tweet image ${index + 1}`}
+              className="w-full h-48 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => window.open(image, '_blank')}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (imageCount === 3) {
+      return (
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden">
+          <img
+            src={tweet.images[0]}
+            alt="Tweet image 1"
+            className="w-full h-48 object-cover cursor-pointer hover:opacity-95 transition-opacity row-span-2"
+            onClick={() => window.open(tweet.images![0], '_blank')}
+          />
+          <div className="grid grid-rows-2 gap-1">
+            {tweet.images.slice(1).map((image, index) => (
+              <img
+                key={index + 1}
+                src={image}
+                alt={`Tweet image ${index + 2}`}
+                className="w-full h-24 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                onClick={() => window.open(image, '_blank')}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (imageCount === 4) {
+      return (
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl overflow-hidden">
+          {tweet.images.map((image, index) => (
+            <img
+              key={index}
+              src={image}
+              alt={`Tweet image ${index + 1}`}
+              className="w-full h-32 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => window.open(image, '_blank')}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors bg-white dark:bg-gray-900">
       <div className="flex space-x-3">
@@ -163,15 +240,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
               <p className="text-gray-900 dark:text-white text-base leading-relaxed">{tweet.content}</p>
             )}
             
-            {tweet.images && tweet.images.length > 0 && (
-              <div className="mt-3 rounded-2xl overflow-hidden">
-                <img
-                  src={tweet.images[0]}
-                  alt="Tweet image"
-                  className="w-full h-64 object-cover"
-                />
-              </div>
-            )}
+            {renderImages()}
           </div>
           
           <div className="flex items-center justify-between mt-4 max-w-md">

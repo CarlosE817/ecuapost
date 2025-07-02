@@ -102,8 +102,28 @@ function AppContent() {
     };
   };
 
-  const handleNewTweet = useCallback((content: string) => {
+  const convertFilesToUrls = (files: File[]): Promise<string[]> => {
+    return Promise.all(
+      files.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      })
+    );
+  };
+
+  const handleNewTweet = useCallback(async (content: string, images?: File[]) => {
     const currentUser = getCurrentUser();
+    
+    let imageUrls: string[] = [];
+    if (images && images.length > 0) {
+      imageUrls = await convertFilesToUrls(images);
+    }
+
     const newTweet: Tweet = {
       id: Date.now().toString(),
       user: currentUser,
@@ -113,10 +133,17 @@ function AppContent() {
       retweets: 0,
       replies: 0,
       liked: false,
-      retweeted: false
+      retweeted: false,
+      images: imageUrls.length > 0 ? imageUrls : undefined
     };
+    
     setTweets(prev => [newTweet, ...prev]);
-    showToast('¡Tweet publicado exitosamente!', 'success');
+    showToast(
+      images && images.length > 0 
+        ? `¡Tweet con ${images.length} imagen${images.length > 1 ? 'es' : ''} publicado!`
+        : '¡Tweet publicado exitosamente!', 
+      'success'
+    );
   }, [user]);
 
   const handleLike = useCallback((tweetId: string) => {
