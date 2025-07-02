@@ -38,6 +38,10 @@ function AppContent() {
     // showToast is available from context but Toast component itself needs state
   } = useAppContext();
 
+  console.log('AppContent - loadingAuth:', loadingAuth);
+  console.log('AppContent - firebaseUser:', firebaseUser);
+  console.log('AppContent - appUser:', appUser);
+
   // Local state for Toast component visibility and content
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const contextShowToast = useAppContext().showToast; // Get showToast from context
