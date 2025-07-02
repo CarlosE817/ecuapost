@@ -1,22 +1,33 @@
 import React, { useState } from 'react';
-import { Image, Smile, Calendar, MapPin } from 'lucide-react';
+import { Smile, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import ImageUpload from './ImageUpload';
 
 interface ComposeBoxProps {
-  onTweet: (content: string) => void;
+  onTweet: (content: string, images?: File[]) => void;
 }
 
 const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
   const [content, setContent] = useState('');
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const { user } = useAuth();
   const maxLength = 280;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (content.trim() && content.length <= maxLength) {
-      onTweet(content);
+      onTweet(content, selectedImages);
       setContent('');
+      setSelectedImages([]);
     }
+  };
+
+  const handleImageSelect = (images: File[]) => {
+    setSelectedImages(images);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const remainingChars = maxLength - content.length;
@@ -44,14 +55,18 @@ const ComposeBox: React.FC<ComposeBoxProps> = ({ onTweet }) => {
               rows={3}
             />
             
+            {/* Image Upload Component */}
+            <div className="mt-3">
+              <ImageUpload
+                onImageSelect={handleImageSelect}
+                selectedImages={selectedImages}
+                onRemoveImage={handleRemoveImage}
+                maxImages={4}
+              />
+            </div>
+            
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center space-x-4">
-                <button
-                  type="button"
-                  className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
-                >
-                  <Image className="h-5 w-5" />
-                </button>
                 <button
                   type="button"
                   className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors"
