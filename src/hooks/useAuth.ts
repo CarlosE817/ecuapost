@@ -13,7 +13,8 @@ import {
   signInWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { auth, googleProvider, facebookProvider } from '../config/firebase';
+import { auth, googleProvider, storage } from '../config/firebase'; // Import storage
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Import storage functions
 
 export interface AuthUser {
   uid: string;
@@ -102,6 +103,46 @@ export const useAuth = () => {
     }
   };
 
+  const updateUserProfilePicture = async (userId: string, file: File): Promise<string | null> => {
+    if (!auth.currentUser || auth.currentUser.uid !== userId) {
+      setError("Usuario no autorizado para esta acción.");
+      return null;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Subir la imagen a Firebase Storage
+      const filePath = `profile_pictures/${userId}/${file.name}`;
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, file);
+      const photoURL = await getDownloadURL(storageRef);
+
+      // 2. Actualizar photoURL en Firebase Auth
+      await updateProfile(auth.currentUser, { photoURL });
+
+      // onAuthStateChanged se encargará de actualizar el estado 'user' del hook.
+      // Actualizar localStorage para persistencia inmediata si onAuthStateChanged tarda.
+      const storedUser = localStorage.getItem('ecuapost-user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        parsedUser.photoURL = photoURL;
+        localStorage.setItem('ecuapost-user', JSON.stringify(parsedUser));
+      }
+
+
+      console.log('✅ Foto de perfil actualizada exitosamente:', photoURL);
+      setLoading(false);
+      return photoURL;
+    } catch (e: any) {
+      console.error('❌ Error al actualizar foto de perfil:', e);
+      setError(getErrorMessage(e));
+      setLoading(false);
+      return null;
+    }
+  };
+
   const signInWithGoogle = async () => {
     try {
       setError(null);
@@ -141,51 +182,6 @@ export const useAuth = () => {
       }
     } catch (error: any) {
       console.error('❌ Error al iniciar sesión con Google:', error);
-      setError(getErrorMessage(error));
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signInWithFacebook = async () => {
-    try {
-      setError(null);
-      setLoading(true);
-      
-      console.log('🚀 Iniciando autenticación con Facebook...');
-      
-      // Detectar si estamos en móvil
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (isMobile) {
-        console.log('📱 Dispositivo móvil, usando redirect...');
-        await signInWithRedirect(auth, facebookProvider);
-        return null;
-      }
-      
-      // Intentar popup primero en desktop
-      try {
-        console.log('🖥️ Intentando popup en desktop...');
-        const result = await signInWithPopup(auth, facebookProvider);
-        console.log('✅ Usuario logueado con Facebook (popup):', result.user.displayName || result.user.email);
-        return result.user;
-      } catch (popupError: any) {
-        console.log('⚠️ Popup falló, cambiando a redirect:', popupError.code);
-        
-        // Si el popup falla, usar redirect como fallback
-        if (popupError.code === 'auth/popup-blocked' || 
-            popupError.code === 'auth/popup-closed-by-user' ||
-            popupError.code === 'auth/cancelled-popup-request') {
-          console.log('🔄 Usando redirect como fallback...');
-          await signInWithRedirect(auth, facebookProvider);
-          return null;
-        } else {
-          throw popupError;
-        }
-      }
-    } catch (error: any) {
-      console.error('❌ Error al iniciar sesión con Facebook:', error);
       setError(getErrorMessage(error));
       throw error;
     } finally {
@@ -271,10 +267,10 @@ export const useAuth = () => {
     loading,
     error,
     signInWithGoogle,
-    signInWithFacebook,
     signInWithPhone,
     signUpWithEmail,
     signInWithEmail,
-    signOut
+    signOut,
+    updateUserProfilePicture // Exportar la nueva función
   };
 };
