@@ -1,15 +1,13 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-import { AppProvider } from './contexts/AppContext.tsx';
-// AuthProvider from useAuth.ts is not a component, useAuth is a hook.
-// Firebase initialization should happen in firebase.ts and useAuth hook uses it.
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { AppProvider } from './contexts/AppContext.tsx' // Asegúrate que AppProvider envuelve a App
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AppProvider> {/* AppProvider wraps App and uses useAuth internally */}
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <AppProvider>
       <App />
     </AppProvider>
-  </StrictMode>
-);
+  </React.StrictMode>,
+)
