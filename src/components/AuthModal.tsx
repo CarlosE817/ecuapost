@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield, AlertCircle, Smartphone, Monitor } from 'lucide-react';
+import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield, AlertCircle, Smartphone, Monitor, Eye, EyeOff } from 'lucide-react';
 import { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -11,15 +11,18 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'phone' | 'verify'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'phone' | 'verify' | 'email-login' | 'email-register'>('login');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [authMethod, setAuthMethod] = useState<'popup' | 'redirect'>('redirect');
 
-  const { signInWithGoogle, signInWithFacebook, signInWithPhone, error } = useAuth();
+  const { signInWithGoogle, signInWithFacebook, signInWithPhone, signUpWithEmail, signInWithEmail, error } = useAuth();
 
   // Detectar tipo de dispositivo
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -48,23 +51,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      console.log(`🚀 Iniciando Google Sign-In (método: ${authMethod})`);
+      console.log(`🚀 Iniciando Google Sign-In`);
       
       const result = await signInWithGoogle();
       
       if (result) {
-        // Popup exitoso
         console.log('✅ Login exitoso con popup');
         onSuccess();
         onClose();
       } else {
-        // Redirect iniciado - la página se recargará automáticamente
         console.log('🔄 Redirect iniciado, esperando recarga...');
-        // No cerramos el modal aquí porque la página se va a recargar
       }
     } catch (error: any) {
       console.error('❌ Error en Google Sign-In:', error);
-      // El error ya se maneja en useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +72,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleFacebookSignIn = async () => {
     try {
       setIsLoading(true);
-      console.log(`🚀 Iniciando Facebook Sign-In (método: ${authMethod})`);
+      console.log(`🚀 Iniciando Facebook Sign-In`);
       
       const result = await signInWithFacebook();
       
@@ -124,10 +123,46 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
     }
   };
 
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !displayName) return;
+
+    try {
+      setIsLoading(true);
+      await signUpWithEmail(email, password, displayName);
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      // Error is handled by useAuth hook
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    try {
+      setIsLoading(true);
+      await signInWithEmail(email, password);
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      // Error is handled by useAuth hook
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetModal = () => {
     setAuthMode('login');
     setPhoneNumber('');
     setVerificationCode('');
+    setEmail('');
+    setPassword('');
+    setDisplayName('');
+    setShowPassword(false);
     setConfirmationResult(null);
     if (recaptchaVerifier) {
       recaptchaVerifier.clear();
@@ -148,7 +183,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
-              {(authMode === 'phone' || authMode === 'verify') && (
+              {(authMode !== 'login' && authMode !== 'register') && (
                 <button
                   onClick={() => setAuthMode('login')}
                   className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -161,6 +196,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 {authMode === 'register' && 'Crear Cuenta'}
                 {authMode === 'phone' && 'Teléfono'}
                 {authMode === 'verify' && 'Verificar Código'}
+                {authMode === 'email-login' && 'Iniciar con Email'}
+                {authMode === 'email-register' && 'Registrarse con Email'}
               </h2>
             </div>
             <button
@@ -198,16 +235,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 <div>
                   <p className="text-red-600 dark:text-red-400 text-sm font-medium">Error de autenticación</p>
                   <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-                  {error.includes('popup') && (
-                    <div className="mt-2 text-xs text-red-500">
-                      <p>💡 <strong>Solución:</strong></p>
-                      <ul className="list-disc list-inside space-y-1 mt-1">
-                        <li>Se usará redirección automáticamente</li>
-                        <li>La página se recargará tras el login</li>
-                        <li>Es normal en dispositivos móviles</li>
-                      </ul>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -239,6 +266,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 <span className="font-medium">
                   {isLoading ? 'Conectando...' : 'Continuar con Facebook'}
                 </span>
+              </button>
+
+              <button
+                onClick={() => setAuthMode('email-login')}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                <Mail className="h-5 w-5 text-gray-500" />
+                <span className="font-medium text-gray-900 dark:text-white">Continuar con Email</span>
               </button>
 
               <button
@@ -293,6 +329,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
               </button>
 
               <button
+                onClick={() => setAuthMode('email-register')}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                <Mail className="h-5 w-5 text-gray-500" />
+                <span className="font-medium text-gray-900 dark:text-white">Registrarse con Email</span>
+              </button>
+
+              <button
                 onClick={() => setAuthMode('phone')}
                 disabled={isLoading}
                 className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
@@ -306,6 +351,155 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                   ¿Ya tienes cuenta?{' '}
                   <button
                     onClick={() => setAuthMode('login')}
+                    className="text-blue-500 hover:underline font-medium"
+                  >
+                    Inicia sesión
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {authMode === 'email-login' && (
+            <div className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+                Inicia sesión con tu email
+              </p>
+
+              <form onSubmit={handleEmailSignIn} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Tu contraseña"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !email || !password}
+                  className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+                </button>
+              </form>
+
+              <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  ¿No tienes cuenta?{' '}
+                  <button
+                    onClick={() => setAuthMode('email-register')}
+                    className="text-blue-500 hover:underline font-medium"
+                  >
+                    Regístrate
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {authMode === 'email-register' && (
+            <div className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+                Crea tu cuenta con email
+              </p>
+
+              <form onSubmit={handleEmailSignUp} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nombre completo
+                  </label>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Tu nombre completo"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !email || !password || !displayName}
+                  className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
+                </button>
+              </form>
+
+              <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  ¿Ya tienes cuenta?{' '}
+                  <button
+                    onClick={() => setAuthMode('email-login')}
                     className="text-blue-500 hover:underline font-medium"
                   >
                     Inicia sesión

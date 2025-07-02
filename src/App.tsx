@@ -91,9 +91,9 @@ function AppContent() {
     if (user) {
       return {
         id: user.uid,
-        username: user.email?.split('@')[0] || 'usuario',
-        displayName: user.displayName || 'Usuario',
-        avatar: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'Usuario')}&background=3b82f6&color=fff`,
+        username: user.email?.split('@')[0] || user.displayName?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
+        displayName: user.displayName || user.email?.split('@')[0] || 'Usuario',
+        avatar: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email?.split('@')[0] || 'Usuario')}&background=3b82f6&color=fff`,
         bio: 'Usuario de EcuaPost',
         followers: 0,
         following: 0,
@@ -160,6 +160,7 @@ function AppContent() {
       console.log('📝 Creando nuevo tweet:', {
         id: newTweet.id,
         content: newTweet.content,
+        user: newTweet.user.displayName,
         imagesCount: newTweet.images?.length || 0
       });
       
@@ -242,6 +243,7 @@ function AppContent() {
 
   const handleAuthSuccess = () => {
     showToast('¡Bienvenido a EcuaPost!', 'success');
+    setShowAuthModal(false);
   };
 
   const renderContent = () => {

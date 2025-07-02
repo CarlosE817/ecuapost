@@ -8,7 +8,10 @@ import {
   signInWithPhoneNumber,
   RecaptchaVerifier,
   ConfirmationResult,
-  signOut as firebaseSignOut
+  signOut as firebaseSignOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import { auth, googleProvider, facebookProvider } from '../config/firebase';
 
@@ -84,6 +87,16 @@ export const useAuth = () => {
         return 'Verificación reCAPTCHA fallida. Inténtalo de nuevo.';
       case 'auth/unauthorized-domain':
         return 'Dominio no autorizado. Contacta al administrador.';
+      case 'auth/email-already-in-use':
+        return 'Este email ya está registrado. Intenta iniciar sesión.';
+      case 'auth/weak-password':
+        return 'La contraseña debe tener al menos 6 caracteres.';
+      case 'auth/invalid-email':
+        return 'Email inválido. Verifica el formato.';
+      case 'auth/user-not-found':
+        return 'No existe una cuenta con este email.';
+      case 'auth/wrong-password':
+        return 'Contraseña incorrecta.';
       default:
         return error.message || 'Error de autenticación';
     }
@@ -98,10 +111,9 @@ export const useAuth = () => {
       
       // Detectar si estamos en móvil o si es probable que los popups estén bloqueados
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isLikelyPopupBlocked = isMobile || window.navigator.userAgent.includes('Chrome');
       
-      if (isLikelyPopupBlocked) {
-        console.log('📱 Dispositivo móvil o popup probablemente bloqueado, usando redirect...');
+      if (isMobile) {
+        console.log('📱 Dispositivo móvil, usando redirect...');
         await signInWithRedirect(auth, googleProvider);
         // El resultado se manejará cuando la página se recargue
         return null;
@@ -198,6 +210,49 @@ export const useAuth = () => {
     }
   };
 
+  const signUpWithEmail = async (email: string, password: string, displayName: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+      console.log('📧 Creando cuenta con email:', email);
+      
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Actualizar el perfil con el nombre
+      await updateProfile(result.user, {
+        displayName: displayName,
+        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`
+      });
+      
+      console.log('✅ Cuenta creada exitosamente:', displayName);
+      return result.user;
+    } catch (error: any) {
+      console.error('❌ Error al crear cuenta:', error);
+      setError(getErrorMessage(error));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+      console.log('📧 Iniciando sesión con email:', email);
+      
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Sesión iniciada exitosamente:', result.user.email);
+      return result.user;
+    } catch (error: any) {
+      console.error('❌ Error al iniciar sesión:', error);
+      setError(getErrorMessage(error));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       setError(null);
@@ -218,6 +273,8 @@ export const useAuth = () => {
     signInWithGoogle,
     signInWithFacebook,
     signInWithPhone,
+    signUpWithEmail,
+    signInWithEmail,
     signOut
   };
 };
