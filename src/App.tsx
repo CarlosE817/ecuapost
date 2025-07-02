@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
-import Timeline from './components/Timeline';
+import Feed from './components/Feed'; // Importar Feed en lugar de Timeline
 import RightSidebar from './components/RightSidebar';
 import Profile from './components/Profile';
 import Messages from './components/Messages';
@@ -117,19 +117,16 @@ function AppContent() {
         // Or, render a specific "please login" view for protected tabs.
     }
 
-    const userTweets = appUser ? tweets.filter(tweet => tweet.user.id === appUser.id) : [];
+    const userPosts = appUser && posts ? posts.filter(post => post.user_id === appUser.id) : []; // Ajustar para posts y user_id
 
     switch (activeTab) {
       case 'home':
-        return (
-          <Timeline
-            tweets={tweets} // from context
-            // onTweet, onLike etc. will now use context methods directly in components
-            // So Timeline might not need all these props if TweetCard uses context
-          />
-        );
+        return <Feed />; // Feed ya obtiene posts del contexto
       case 'explore':
-        return <Explore tweets={tweets} />; // Explore can also use context for actions
+        // Explore necesitará ser adaptado para usar `posts` y `PostData` si se mantiene.
+        // Por ahora, podría fallar o mostrar datos incorrectos si espera la estructura de `Tweet`.
+        // De momento, vamos a dejarlo así y luego se puede revisar.
+        return <Explore tweets={posts} />; // Pasando posts, pero Explore internamente espera Tweets
       case 'notifications':
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver notificaciones.</div>;
         return <Notifications />;
@@ -137,15 +134,18 @@ function AppContent() {
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver mensajes.</div>;
         return <Messages />;
       case 'bookmarks':
+        // Bookmarks también necesitará una refactorización mayor para PostData y nueva lógica de backend.
+        // Comentado/simplificado por ahora.
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver tus bookmarks.</div>;
-        return <Bookmarks tweets={tweets.filter(tweet => isTweetBookmarked(tweet.id))} />;
+        // return <Bookmarks tweets={posts.filter(post => isTweetBookmarked(post.id))} />;
+        return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Bookmarks (Próximamente)</div>;
       case 'profile':
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver tu perfil.</div>;
-        return <Profile user={appUser} tweets={userTweets} />; // Profile can use context too
+        return <Profile user={appUser} tweets={userPosts} />; // Pasando userPosts. Profile necesitará adaptarse a PostData.
       case 'settings':
-        return <Settings />; // Settings might need appUser
+        return <Settings />;
       default:
-        return <Timeline tweets={tweets} />;
+        return <Feed />; // Feed por defecto
     }
   };
 

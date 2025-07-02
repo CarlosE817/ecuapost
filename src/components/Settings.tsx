@@ -100,7 +100,8 @@ const Settings: React.FC = () => {
       </div>
       
       <div className="p-4">
-        {appUser && (
+        {/* Sección de Foto de Perfil comentada temporalmente */}
+        {/* {appUser && (
           <div className="mb-8 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Foto de Perfil</h2>
             <div className="flex items-center space-x-4">
@@ -147,7 +148,7 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {settingsGroups.map((group, groupIndex) => (
           <div key={groupIndex} className="mb-8">
