@@ -1,74 +1,70 @@
 import React, { useState, useMemo } from 'react';
 import { Search, TrendingUp, User } from 'lucide-react';
-import { Tweet } from '../types';
+// import { Tweet } from '../types'; // Tweet type can be inferred
 import TweetCard from './TweetCard';
-import { trendingTopics } from '../data/mockData';
+import { trendingTopics } from '../data/mockData'; // Assuming this is still relevant
+import { useAppContext } from '../contexts/AppContext';
 
-interface ExploreProps {
-  tweets: Tweet[];
-  onLike: (tweetId: string) => void;
-  onRetweet: (tweetId: string) => void;
-  onReply: (tweetId: string) => void;
-  onBookmark: (tweetId: string) => void;
-  bookmarkedTweets: string[];
-}
+// ExploreProps removed as data comes from context
+// interface ExploreProps {
+//   tweets: Tweet[];
+//   onLike: (tweetId: string) => void;
+//   onRetweet: (tweetId: string) => void;
+//   onReply: (tweetId: string) => void;
+//   onBookmark: (tweetId: string) => void;
+//   bookmarkedTweets: string[];
+// }
 
-const Explore: React.FC<ExploreProps> = ({ 
-  tweets, 
-  onLike, 
-  onRetweet, 
-  onReply, 
-  onBookmark, 
-  bookmarkedTweets 
-}) => {
+const Explore: React.FC = () => {
+  const { tweets } = useAppContext(); // Get all tweets from context
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('trending');
+  const [activeTab, setActiveTab] = useState('trending'); // Local state for UI tabs
 
-  // Mejorar la función de filtrado con useMemo para optimización
+  // Filtered tweets based on search term
   const filteredTweets = useMemo(() => {
     if (!searchTerm.trim()) {
+      // When no search term, what to show depends on the tab.
+      // For 'latest' tab with no search, it might show all tweets or a subset.
+      // For now, let's return all tweets if no search term, and let tabs handle further filtering.
+      // Or, if activeTab is 'latest' and no search, latestTweets will be used.
+      // This logic might need refinement based on desired behavior for empty search on 'latest'.
       return tweets;
     }
 
     const searchLower = searchTerm.toLowerCase().trim();
-    console.log('🔍 Buscando:', searchLower);
-    console.log('📊 Total tweets disponibles:', tweets.length);
+    // console.log('🔍 Buscando:', searchLower);
+    // console.log('📊 Total tweets disponibles:', tweets.length);
 
     const filtered = tweets.filter(tweet => {
-      // Buscar en el contenido del tweet
       const contentMatch = tweet.content.toLowerCase().includes(searchLower);
-      
-      // Buscar en el nombre de usuario
       const displayNameMatch = tweet.user.displayName.toLowerCase().includes(searchLower);
-      
-      // Buscar en el username
       const usernameMatch = tweet.user.username.toLowerCase().includes(searchLower);
-      
-      // Buscar en la bio del usuario (si existe)
       const bioMatch = tweet.user.bio?.toLowerCase().includes(searchLower) || false;
-
-      const isMatch = contentMatch || displayNameMatch || usernameMatch || bioMatch;
-      
-      if (isMatch) {
-        console.log('✅ Tweet encontrado:', {
-          id: tweet.id,
-          content: tweet.content.substring(0, 50) + '...',
-          user: tweet.user.displayName,
-          matchType: contentMatch ? 'content' : displayNameMatch ? 'displayName' : usernameMatch ? 'username' : 'bio'
-        });
-      }
-      
-      return isMatch;
+      return contentMatch || displayNameMatch || usernameMatch || bioMatch;
     });
 
-    console.log('📋 Resultados de búsqueda:', filtered.length);
+    // console.log('📋 Resultados de búsqueda:', filtered.length);
     return filtered;
   }, [tweets, searchTerm]);
 
-  // Tweets más recientes (ordenados por fecha)
+  // Tweets sorted by timestamp for the 'latest' tab
   const latestTweets = useMemo(() => {
-    return [...tweets].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return [...tweets].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [tweets]);
+
+  const displayTweets = useMemo(() => {
+    if (searchTerm.trim()) {
+      return filteredTweets;
+    }
+    if (activeTab === 'latest') {
+      return latestTweets;
+    }
+    // For 'trending' or 'people' without search, different content is shown, not a list of TweetCards from `tweets`.
+    // If 'trending' tab is active and there's a search, it should show filteredTweets.
+    // This means the main list rendering logic needs to consider activeTab and searchTerm.
+    return []; // Default to empty if not 'latest' and no search term for general tweet list
+  }, [searchTerm, activeTab, filteredTweets, latestTweets]);
+
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -112,13 +108,14 @@ const Explore: React.FC<ExploreProps> = ({
         {/* Mostrar información de búsqueda */}
         {searchTerm && (
           <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            {filteredTweets.length > 0 ? (
+            {/* Using displayTweets here as it's the list for the current view when searching */}
+            {displayTweets.length > 0 ? (
               <span>
-                {filteredTweets.length} resultado{filteredTweets.length !== 1 ? 's' : ''} para "{searchTerm}"
+                {displayTweets.length} resultado{displayTweets.length !== 1 ? 's' : ''} para "{searchTerm}"
               </span>
             ) : (
               <span className="text-red-500">
-                No se encontraron resultados para "{searchTerm}"
+                No se encontraron resultados para "{searchTerm}" {/* Keep this specific message for no results */}
               </span>
             )}
           </div>
@@ -185,9 +182,10 @@ const Explore: React.FC<ExploreProps> = ({
         </div>
       )}
       
-      {activeTab === 'latest' && (
+      {/* Display list of tweets if on 'latest' tab OR if there's a search term (results view) */}
+      {(activeTab === 'latest' || searchTerm.trim()) && (
         <div>
-          {(searchTerm ? filteredTweets : latestTweets).length === 0 ? (
+          {displayTweets.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <Search className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p className="text-xl font-bold mb-2">
@@ -207,21 +205,17 @@ const Explore: React.FC<ExploreProps> = ({
                       </button>
                     </>
                   )
-                  : 'Los tweets más recientes aparecerán aquí'
+                  : 'Cuando haya nuevos tweets, los verás aquí.'
                 }
               </p>
             </div>
           ) : (
             <div>
-              {(searchTerm ? filteredTweets : latestTweets).map((tweet) => (
+              {displayTweets.map((tweet) => (
                 <TweetCard
                   key={tweet.id}
                   tweet={tweet}
-                  onLike={onLike}
-                  onRetweet={onRetweet}
-                  onReply={onReply}
-                  onBookmark={onBookmark}
-                  isBookmarked={bookmarkedTweets.includes(tweet.id)}
+                  // Props like onLike, onRetweet, onBookmark, isBookmarked are handled by TweetCard itself using context
                 />
               ))}
             </div>
@@ -229,17 +223,21 @@ const Explore: React.FC<ExploreProps> = ({
         </div>
       )}
       
-      {activeTab === 'people' && (
+      {activeTab === 'people' && !searchTerm.trim() && ( // Show placeholder only if no search term
         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
           <User className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
           <p className="text-xl font-bold mb-2">Buscar personas</p>
           <p>Usa la barra de búsqueda para encontrar personas en EcuaPost</p>
-          {searchTerm && (
-            <div className="mt-4">
-              <p className="text-sm">Buscando personas que coincidan con: "{searchTerm}"</p>
-              <p className="text-xs mt-2 text-gray-400">Esta función estará disponible próximamente</p>
-            </div>
-          )}
+        </div>
+      )}
+
+      {/* If searching on 'people' tab, this could show person search results if implemented */}
+      {activeTab === 'people' && searchTerm.trim() && (
+         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+          <User className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <p className="text-xl font-bold mb-2">Buscando personas...</p>
+          <p>Resultados de búsqueda para "{searchTerm}" en la categoría personas aparecerán aquí.</p>
+           <p className="text-xs mt-2 text-gray-400">(Función de búsqueda de personas próximamente)</p>
         </div>
       )}
     </div>

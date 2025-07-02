@@ -2,11 +2,11 @@
 
 **EcuaPost** es una red social minimalista tipo Twitter con autenticación completa, desarrollada con:
 
-- ⚛️ React + TypeScript
+- ⚛️ React + TypeScript (con Context API y Hooks para gestión de estado)
 - ⚡ Vite
 - 🎨 TailwindCSS
-- 🔥 Firebase Authentication
-- 💾 LocalStorage para persistencia
+- 🔥 Firebase (Authentication y Storage)
+- 💾 LocalStorage para persistencia de tweets y bookmarks (las imágenes se guardan en Firebase Storage)
 
 ---
 
@@ -21,17 +21,18 @@
 
 ### 📱 Red Social
 - Crear y visualizar publicaciones tipo tweet
+- **Subida de imágenes a Firebase Storage** ✅
 - Likes, retweets y bookmarks
 - Editar y eliminar tus propios tweets
-- Sistema de notificaciones en tiempo real
+- Sistema de notificaciones en tiempo real (básico, vía toasts)
 - Búsqueda avanzada con filtros
 - Navegación completa entre secciones
 
 ### 💾 Persistencia
-- Datos guardados en localStorage
-- No se pierden tweets al recargar
-- Bookmarks persistentes
-- Configuración de usuario guardada
+- Datos de tweets (texto, metadatos) y bookmarks guardados en localStorage
+- URLs de imágenes (hosteadas en Firebase Storage) se guardan con los tweets
+- No se pierden tweets ni bookmarks al recargar
+- Configuración de usuario guardada (tema, etc.)
 
 ### 🎨 Interfaz
 - Diseño responsivo y moderno
@@ -56,8 +57,23 @@ npm install
    - **Google**: Habilitar en Authentication > Sign-in method
    - **Facebook**: Configurar App ID y App Secret
    - **Teléfono**: Habilitar SMS authentication
-
-4. Copia la configuración de Firebase y actualiza `src/config/firebase.ts`:
+4. **Habilita Firebase Storage**:
+   - Ve a la sección "Storage" en Firebase Console y haz clic en "Comenzar".
+   - **Importante: Configura las Reglas de Seguridad de Storage**. Para empezar, puedes usar reglas permisivas para desarrollo, pero asegúrate de proteger tus datos en producción. Un ejemplo para desarrollo (permite leer a todos, escribir solo a usuarios autenticados en sus propios directorios de imágenes):
+     ```
+     rules_version = '2';
+     service firebase.storage {
+       match /b/{bucket}/o {
+         match /{allPaths=**} {
+           allow read;
+         }
+         match /tweet_images/{userId}/{allPaths=**} {
+           allow write: if request.auth != null && request.auth.uid == userId;
+         }
+       }
+     }
+     ```
+5. Copia la configuración de Firebase y actualiza `src/config/firebase.ts`:
 
 ```typescript
 const firebaseConfig = {
@@ -103,14 +119,35 @@ src/
 │   ├── Sidebar.tsx     # Barra lateral
 │   └── ...
 ├── config/
-│   └── firebase.ts     # Configuración Firebase
+│   └── firebase.ts     # Configuración Firebase (incluye Storage)
+├── contexts/
+│   └── AppContext.tsx  # Contexto principal de la aplicación
+│   └── ThemeContext.tsx# Contexto para el tema (claro/oscuro)
 ├── hooks/
-│   └── useAuth.ts      # Hook de autenticación
+│   ├── useAuth.ts      # Hook de autenticación
+│   ├── useTweets.ts    # Hook para gestión de tweets (CRUD, Storage)
+│   ├── useBookmarks.ts # Hook para gestión de bookmarks
 ├── data/
 │   └── mockData.ts     # Datos de ejemplo
 └── types/
     └── index.ts        # Tipos TypeScript
 ```
+
+---
+
+## 🔧 Pruebas
+
+El proyecto está configurado con Vitest para pruebas unitarias y de componentes. Para ejecutar las pruebas:
+
+```bash
+npm test
+```
+o
+```bash
+npx vitest
+```
+(Nota: Las pruebas pueden requerir configuración adicional o ajustes para ejecutarse correctamente en todos los entornos.)
+
 
 ---
 
@@ -144,8 +181,8 @@ src/
 
 - [ ] Chat en tiempo real
 - [ ] Notificaciones push
-- [ ] Subida de imágenes
-- [ ] Modo oscuro
+- [x] Subida de imágenes (Implementado con Firebase Storage, persistencia en localStorage de URLs)
+- [ ] Modo oscuro (Base implementada con ThemeContext, necesita UI completa)
 - [ ] Historias/Stories
 - [ ] Verificación de cuentas
 

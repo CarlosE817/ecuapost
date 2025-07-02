@@ -1,33 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Repeat, Share, MoreHorizontal, BadgeCheck, Bookmark, Trash2, Edit3 } from 'lucide-react';
 import { Tweet } from '../types';
-import { useAuth } from '../hooks/useAuth';
+// import { useAuth } from '../hooks/useAuth'; // Replaced by useAppContext
+import { useAppContext } from '../contexts/AppContext';
 
 interface TweetCardProps {
   tweet: Tweet;
-  onLike: (tweetId: string) => void;
-  onRetweet: (tweetId: string) => void;
-  onReply: (tweetId: string) => void;
-  onBookmark: (tweetId: string) => void;
-  onDelete?: (tweetId: string) => void;
-  onEdit?: (tweetId: string, content: string) => void;
-  isBookmarked: boolean;
+  // onLike, onRetweet, etc. are removed as they will come from context
+  // isBookmarked is also removed, will be checked via context
 }
 
-const TweetCard: React.FC<TweetCardProps> = ({ 
-  tweet, 
-  onLike, 
-  onRetweet, 
-  onReply, 
-  onBookmark, 
-  onDelete, 
-  onEdit, 
-  isBookmarked 
-}) => {
+const TweetCard: React.FC<TweetCardProps> = ({ tweet }) => {
+  const {
+    appUser, // to check if it's the user's own tweet
+    handleLikeTweet,
+    handleRetweetTweet,
+    handleReplyTweet,
+    handleBookmarkTweet,
+    handleDeleteTweet,
+    handleEditTweet,
+    isTweetBookmarked,
+    showToast, // For potential local actions/feedback not covered by global handlers
+  } = useAppContext();
+
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(tweet.content);
-  const { user } = useAuth();
+  // const { user } = useAuth(); // firebaseUser is in appUser from context
+
+  // Update editContent if tweet.content changes externally (e.g. optimistic updates elsewhere)
+  useEffect(() => {
+    setEditContent(tweet.content);
+  }, [tweet.content]);
+
+  const isBookmarked = isTweetBookmarked(tweet.id); // Get bookmark status from context
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -47,19 +53,19 @@ const TweetCard: React.FC<TweetCardProps> = ({
     return num.toString();
   };
 
-  const isOwnTweet = user && tweet.user.id === user.uid;
+  const isOwnTweet = appUser && tweet.user.id === appUser.id;
 
-  const handleEdit = () => {
-    if (onEdit && editContent.trim() && editContent !== tweet.content) {
-      onEdit(tweet.id, editContent);
+  const handleSaveChanges = () => {
+    if (handleEditTweet && editContent.trim() && editContent !== tweet.content) {
+      handleEditTweet(tweet.id, editContent.trim());
     }
     setIsEditing(false);
     setShowMenu(false);
   };
 
-  const handleDelete = () => {
-    if (onDelete && window.confirm('¿Estás seguro de que quieres eliminar este tweet?')) {
-      onDelete(tweet.id);
+  const confirmAndDelete = () => {
+    if (handleDeleteTweet && window.confirm('¿Estás seguro de que quieres eliminar este tweet?')) {
+      handleDeleteTweet(tweet.id);
     }
     setShowMenu(false);
   };
@@ -160,9 +166,10 @@ const TweetCard: React.FC<TweetCardProps> = ({
             <span className="text-gray-500 dark:text-gray-400">·</span>
             <span className="text-gray-500 dark:text-gray-400">{formatTime(tweet.timestamp)}</span>
             <div className="ml-auto relative">
-              <button 
+              <button
                 onClick={() => setShowMenu(!showMenu)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors"
+                aria-label="More options"
               >
                 <MoreHorizontal className="h-5 w-5" />
               </button>
@@ -171,7 +178,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
                   <button
                     onClick={() => {
-                      onBookmark(tweet.id);
+                      handleBookmarkTweet(tweet.id);
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 text-gray-900 dark:text-white"
@@ -180,10 +187,11 @@ const TweetCard: React.FC<TweetCardProps> = ({
                     <span>{isBookmarked ? 'Quitar bookmark' : 'Guardar tweet'}</span>
                   </button>
                   
-                  {isOwnTweet && onEdit && (
+                  {isOwnTweet && handleEditTweet && (
                     <button
                       onClick={() => {
                         setIsEditing(true);
+                        setEditContent(tweet.content); // Reset edit content to current tweet content
                         setShowMenu(false);
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 text-gray-900 dark:text-white"
@@ -193,9 +201,9 @@ const TweetCard: React.FC<TweetCardProps> = ({
                     </button>
                   )}
                   
-                  {isOwnTweet && onDelete && (
+                  {isOwnTweet && handleDeleteTweet && (
                     <button
-                      onClick={handleDelete}
+                      onClick={confirmAndDelete}
                       className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -216,6 +224,7 @@ const TweetCard: React.FC<TweetCardProps> = ({
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   rows={3}
                   maxLength={280}
+                  aria-label="Edit tweet content"
                 />
                 <div className="flex justify-end space-x-2">
                   <button
@@ -228,8 +237,8 @@ const TweetCard: React.FC<TweetCardProps> = ({
                     Cancelar
                   </button>
                   <button
-                    onClick={handleEdit}
-                    disabled={!editContent.trim() || editContent === tweet.content}
+                    onClick={handleSaveChanges}
+                    disabled={!editContent.trim() || editContent.trim() === tweet.content}
                     className="px-3 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                   >
                     Guardar
@@ -245,8 +254,9 @@ const TweetCard: React.FC<TweetCardProps> = ({
           
           <div className="flex items-center justify-between mt-4 max-w-md">
             <button
-              onClick={() => onReply(tweet.id)}
+              onClick={() => handleReplyTweet(tweet.id)}
               className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 group transition-colors"
+              aria-label={`Reply to tweet, ${tweet.replies} replies`}
             >
               <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
                 <MessageCircle className="h-5 w-5" />
@@ -255,10 +265,11 @@ const TweetCard: React.FC<TweetCardProps> = ({
             </button>
             
             <button
-              onClick={() => onRetweet(tweet.id)}
+              onClick={() => handleRetweetTweet(tweet.id)}
               className={`flex items-center space-x-2 group transition-colors ${
                 tweet.retweeted ? 'text-green-500' : 'text-gray-500 dark:text-gray-400 hover:text-green-500'
               }`}
+              aria-label={tweet.retweeted ? `Undo retweet, ${tweet.retweets} retweets` : `Retweet, ${tweet.retweets} retweets`}
             >
               <div className={`p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20 transition-colors ${
                 tweet.retweeted ? 'bg-green-50 dark:bg-green-900/20' : ''
@@ -269,10 +280,11 @@ const TweetCard: React.FC<TweetCardProps> = ({
             </button>
             
             <button
-              onClick={() => onLike(tweet.id)}
+              onClick={() => handleLikeTweet(tweet.id)}
               className={`flex items-center space-x-2 group transition-colors ${
                 tweet.liked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
               }`}
+              aria-label={tweet.liked ? `Unlike tweet, ${tweet.likes} likes` : `Like tweet, ${tweet.likes} likes`}
             >
               <div className={`p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20 transition-colors ${
                 tweet.liked ? 'bg-red-50 dark:bg-red-900/20' : ''
@@ -282,7 +294,9 @@ const TweetCard: React.FC<TweetCardProps> = ({
               <span className="text-sm">{formatNumber(tweet.likes)}</span>
             </button>
             
-            <button className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 group transition-colors">
+            <button className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 group transition-colors"
+              aria-label="Share tweet"
+            >
               <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
                 <Share className="h-5 w-5" />
               </div>
