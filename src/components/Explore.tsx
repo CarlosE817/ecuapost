@@ -1,69 +1,54 @@
 import React, { useState, useMemo } from 'react';
 import { Search, TrendingUp, User } from 'lucide-react';
-// import { Tweet } from '../types'; // Tweet type can be inferred
-import TweetCard from './TweetCard';
-import { trendingTopics } from '../data/mockData'; // Assuming this is still relevant
+import PostCard from './PostCard'; // Cambiado de TweetCard a PostCard
+import { trendingTopics } from '../data/mockData';
 import { useAppContext } from '../contexts/AppContext';
-
-// ExploreProps removed as data comes from context
-// interface ExploreProps {
-//   tweets: Tweet[];
-//   onLike: (tweetId: string) => void;
-//   onRetweet: (tweetId: string) => void;
-//   onReply: (tweetId: string) => void;
-//   onBookmark: (tweetId: string) => void;
-//   bookmarkedTweets: string[];
-// }
+import { PostData } from '../types'; // Importar PostData
 
 const Explore: React.FC = () => {
-  const { tweets } = useAppContext(); // Get all tweets from context
+  const { posts, loadingPosts, errorPosts } = useAppContext(); // Usar posts del contexto
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('trending'); // Local state for UI tabs
+  const [activeTab, setActiveTab] = useState('trending');
 
-  // Filtered tweets based on search term
-  const filteredTweets = useMemo(() => {
+  // Filtrar posts basados en el término de búsqueda
+  const filteredPosts = useMemo(() => {
     if (!searchTerm.trim()) {
-      // When no search term, what to show depends on the tab.
-      // For 'latest' tab with no search, it might show all tweets or a subset.
-      // For now, let's return all tweets if no search term, and let tabs handle further filtering.
-      // Or, if activeTab is 'latest' and no search, latestTweets will be used.
-      // This logic might need refinement based on desired behavior for empty search on 'latest'.
-      return tweets;
+      return posts; // Si no hay búsqueda, devolver todos los posts (para la pestaña 'latest' o resultados)
     }
 
     const searchLower = searchTerm.toLowerCase().trim();
-    // console.log('🔍 Buscando:', searchLower);
-    // console.log('📊 Total tweets disponibles:', tweets.length);
 
-    const filtered = tweets.filter(tweet => {
-      const contentMatch = tweet.content.toLowerCase().includes(searchLower);
-      const displayNameMatch = tweet.user.displayName.toLowerCase().includes(searchLower);
-      const usernameMatch = tweet.user.username.toLowerCase().includes(searchLower);
-      const bioMatch = tweet.user.bio?.toLowerCase().includes(searchLower) || false;
-      return contentMatch || displayNameMatch || usernameMatch || bioMatch;
+    // Filtrar PostData
+    // Asumimos que PostData tiene `contenido`, `username`, y opcionalmente `displayName`
+    // El `bio` del usuario no está directamente en PostData, así que no podemos buscar por él aquí.
+    // La búsqueda por autor se hará sobre `post.username` y `post.displayName` si existe.
+    const filtered = posts.filter(post => {
+      const contentMatch = post.contenido.toLowerCase().includes(searchLower);
+      const usernameMatch = post.username.toLowerCase().includes(searchLower);
+      const displayNameMatch = post.displayName?.toLowerCase().includes(searchLower) || false;
+      return contentMatch || usernameMatch || displayNameMatch;
     });
 
-    // console.log('📋 Resultados de búsqueda:', filtered.length);
     return filtered;
-  }, [tweets, searchTerm]);
+  }, [posts, searchTerm]);
 
-  // Tweets sorted by timestamp for the 'latest' tab
-  const latestTweets = useMemo(() => {
-    return [...tweets].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [tweets]);
+  // Posts ordenados por fecha para la pestaña 'latest'
+  // 'posts' ya viene ordenado por fecha desde usePosts, pero si quisiéramos re-ordenar o asegurar:
+  const latestPosts = useMemo(() => {
+    // return [...posts].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    // Si 'posts' del contexto ya está ordenado, podemos simplemente usarlo o una copia.
+    return posts; // Asumiendo que posts del contexto ya está ordenado.
+  }, [posts]);
 
-  const displayTweets = useMemo(() => {
+  const displayPosts = useMemo(() => { // Renombrado a displayPosts
     if (searchTerm.trim()) {
-      return filteredTweets;
+      return filteredPosts;
     }
     if (activeTab === 'latest') {
-      return latestTweets;
+      return latestPosts;
     }
-    // For 'trending' or 'people' without search, different content is shown, not a list of TweetCards from `tweets`.
-    // If 'trending' tab is active and there's a search, it should show filteredTweets.
-    // This means the main list rendering logic needs to consider activeTab and searchTerm.
-    return []; // Default to empty if not 'latest' and no search term for general tweet list
-  }, [searchTerm, activeTab, filteredTweets, latestTweets]);
+    return [];
+  }, [searchTerm, activeTab, filteredPosts, latestPosts]);
 
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,15 +93,19 @@ const Explore: React.FC = () => {
         {/* Mostrar información de búsqueda */}
         {searchTerm && (
           <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            {/* Using displayTweets here as it's the list for the current view when searching */}
-            {displayTweets.length > 0 ? (
+            {displayPosts.length > 0 ? ( // Usar displayPosts
               <span>
-                {displayTweets.length} resultado{displayTweets.length !== 1 ? 's' : ''} para "{searchTerm}"
+                {displayPosts.length} resultado{displayPosts.length !== 1 ? 's' : ''} para "{searchTerm}"
               </span>
             ) : (
-              <span className="text-red-500">
-                No se encontraron resultados para "{searchTerm}" {/* Keep this specific message for no results */}
-              </span>
+              // No mostrar "No se encontraron resultados" aquí si loadingPosts o errorPosts es true,
+              // ya que el mensaje de error/carga se mostrará en la sección de la lista de posts.
+              // Solo mostrar si no hay carga ni error, y aun así no hay resultados.
+              !loadingPosts && !errorPosts && (
+                 <span className="text-red-500">
+                    No se encontraron resultados para "{searchTerm}"
+                 </span>
+              )
             )}
           </div>
         )}
@@ -170,26 +159,28 @@ const Explore: React.FC = () => {
                 className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors"
                 onClick={() => {
                   setSearchTerm(topic.tag);
-                  setActiveTab('latest');
+                  setActiveTab('latest'); // Cambiar a 'latest' para mostrar resultados de posts
                 }}
               >
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Tendencia en Tecnología</p>
                 <p className="font-bold text-gray-900 dark:text-white text-lg">{topic.tag}</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{topic.tweets} Tweets</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{topic.tweets} Posts</p> {/* Cambiado Tweets a Posts */}
               </div>
             ))}
           </div>
         </div>
       )}
       
-      {/* Display list of tweets if on 'latest' tab OR if there's a search term (results view) */}
+      {/* Mostrar lista de posts si está en la pestaña 'latest' O si hay un término de búsqueda */}
       {(activeTab === 'latest' || searchTerm.trim()) && (
         <div>
-          {displayTweets.length === 0 ? (
+          {loadingPosts && <p className="p-4 text-center text-gray-500 dark:text-gray-400">Cargando posts...</p>}
+          {errorPosts && <p className="p-4 text-center text-red-500 dark:text-red-400">Error: {errorPosts}</p>}
+          {!loadingPosts && !errorPosts && displayPosts.length === 0 && (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <Search className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p className="text-xl font-bold mb-2">
-                {searchTerm ? 'No se encontraron resultados' : 'No hay tweets recientes'}
+                {searchTerm ? 'No se encontraron resultados' : 'No hay posts recientes'}
               </p>
               <p>
                 {searchTerm 
@@ -205,17 +196,17 @@ const Explore: React.FC = () => {
                       </button>
                     </>
                   )
-                  : 'Cuando haya nuevos tweets, los verás aquí.'
+                  : 'Cuando haya nuevos posts, los verás aquí.' // Cambiado tweets a posts
                 }
               </p>
             </div>
-          ) : (
+          )}
+          {!loadingPosts && !errorPosts && displayPosts.length > 0 && (
             <div>
-              {displayTweets.map((tweet) => (
-                <TweetCard
-                  key={tweet.id}
-                  tweet={tweet}
-                  // Props like onLike, onRetweet, onBookmark, isBookmarked are handled by TweetCard itself using context
+              {displayPosts.map((post) => ( // Usar displayPosts y PostCard
+                <PostCard
+                  key={post.id}
+                  post={post}
                 />
               ))}
             </div>
@@ -223,7 +214,7 @@ const Explore: React.FC = () => {
         </div>
       )}
       
-      {activeTab === 'people' && !searchTerm.trim() && ( // Show placeholder only if no search term
+      {activeTab === 'people' && !searchTerm.trim() && (
         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
           <User className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
           <p className="text-xl font-bold mb-2">Buscar personas</p>

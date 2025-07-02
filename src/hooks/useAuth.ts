@@ -103,45 +103,44 @@ export const useAuth = () => {
     }
   };
 
-  const updateUserProfilePicture = async (userId: string, file: File): Promise<string | null> => {
-    if (!auth.currentUser || auth.currentUser.uid !== userId) {
-      setError("Usuario no autorizado para esta acción.");
-      return null;
-    }
+  // const updateUserProfilePicture = async (userId: string, file: File): Promise<string | null> => {
+  //   if (!auth.currentUser || auth.currentUser.uid !== userId) {
+  //     setError("Usuario no autorizado para esta acción.");
+  //     return null;
+  //   }
 
-    setLoading(true);
-    setError(null);
+  //   setLoading(true);
+  //   setError(null);
 
-    try {
-      // 1. Subir la imagen a Firebase Storage
-      const filePath = `profile_pictures/${userId}/${file.name}`;
-      const storageRef = ref(storage, filePath);
-      await uploadBytes(storageRef, file);
-      const photoURL = await getDownloadURL(storageRef);
+  //   try {
+  //     // 1. Subir la imagen a Firebase Storage
+  //     const filePath = `profile_pictures/${userId}/${file.name}`;
+  //     const storageRef = ref(storage, filePath);
+  //     await uploadBytes(storageRef, file);
+  //     const photoURL = await getDownloadURL(storageRef);
 
-      // 2. Actualizar photoURL en Firebase Auth
-      await updateProfile(auth.currentUser, { photoURL });
+  //     // 2. Actualizar photoURL en Firebase Auth
+  //     await updateProfile(auth.currentUser, { photoURL });
 
-      // onAuthStateChanged se encargará de actualizar el estado 'user' del hook.
-      // Actualizar localStorage para persistencia inmediata si onAuthStateChanged tarda.
-      const storedUser = localStorage.getItem('ecuapost-user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        parsedUser.photoURL = photoURL;
-        localStorage.setItem('ecuapost-user', JSON.stringify(parsedUser));
-      }
+  //     // onAuthStateChanged se encargará de actualizar el estado 'user' del hook.
+  //     // Actualizar localStorage para persistencia inmediata si onAuthStateChanged tarda.
+  //     const storedUser = localStorage.getItem('ecuapost-user');
+  //     if (storedUser) {
+  //       const parsedUser = JSON.parse(storedUser);
+  //       parsedUser.photoURL = photoURL;
+  //       localStorage.setItem('ecuapost-user', JSON.stringify(parsedUser));
+  //     }
 
-
-      console.log('✅ Foto de perfil actualizada exitosamente:', photoURL);
-      setLoading(false);
-      return photoURL;
-    } catch (e: any) {
-      console.error('❌ Error al actualizar foto de perfil:', e);
-      setError(getErrorMessage(e));
-      setLoading(false);
-      return null;
-    }
-  };
+  //     console.log('✅ Foto de perfil actualizada exitosamente:', photoURL);
+  //     setLoading(false);
+  //     return photoURL;
+  //   } catch (e: any) {
+  //     console.error('❌ Error al actualizar foto de perfil:', e);
+  //     setError(getErrorMessage(e));
+  //     setLoading(false);
+  //     return null;
+  //   }
+  // };
 
   const signInWithGoogle = async () => {
     try {
@@ -271,6 +270,6 @@ export const useAuth = () => {
     signUpWithEmail,
     signInWithEmail,
     signOut,
-    updateUserProfilePicture // Exportar la nueva función
+    // updateUserProfilePicture // Comentado temporalmente
   };
 };

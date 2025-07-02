@@ -1,25 +1,16 @@
-import React, { useState } from 'react'; // Added useState for active tab
-import { Calendar, MapPin, Edit2 } from 'lucide-react'; // Link as LinkIcon removed as website not shown
-// import { User, Tweet } from '../types'; // Types can be inferred or imported if needed locally
-import TweetCard from './TweetCard';
+import React, { useState } from 'react';
+import { Calendar, MapPin, Edit2 } from 'lucide-react';
+import PostCard from './PostCard'; // Cambiado de TweetCard a PostCard
 import { useAppContext } from '../contexts/AppContext';
-
-// ProfileProps removed
-// interface ProfileProps {
-//   user: User;
-//   tweets: Tweet[];
-//   onLike: (tweetId: string) => void;
-//   onRetweet: (tweetId: string) => void;
-//   onReply: (tweetId: string) => void;
-//   onBookmark: (tweetId: string) => void;
-//   onDelete: (tweetId: string) => void;
-//   onEdit: (tweetId: string, content: string) => void;
-//   bookmarkedTweets: string[];
-// }
+import { PostData } from '../types'; // Importar PostData
 
 const Profile: React.FC = () => {
-  const { appUser, tweets: allTweets, showToast } = useAppContext(); // Renamed tweets to allTweets to avoid conflict
-  const [activeTab, setActiveTab] = useState('tweets'); // For handling tabs like Tweets, Replies, Media
+  // Usar 'posts' del contexto en lugar de 'tweets'
+  // 'appUser' ya está disponible en el contexto
+  // 'tweets' prop ya no se pasa a Profile, se obtienen del contexto.
+  // La prop 'user' (para ver el perfil de otro) no está implementada, Profile siempre muestra el appUser.
+  const { appUser, posts: allPosts, showToast, firebaseUser } = useAppContext();
+  const [activeTab, setActiveTab] = useState('tweets');
 
   if (!appUser) {
     return (
@@ -32,15 +23,20 @@ const Profile: React.FC = () => {
     );
   }
 
-  // Filter tweets to get only those by the current appUser and sort them
-  const userTweets = allTweets
-    .filter(tweet => tweet.user.id === appUser.id)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  // Filtrar posts para obtener solo los del appUser actual y ordenarlos
+  // Asumiendo que 'allPosts' es PostData[] y PostData tiene 'user_id' y 'fecha'
+  const userPosts: PostData[] = allPosts
+    .filter(post => post.user_id === appUser.id)
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-  // Attempt to get join date from Firebase user metadata if available through appUser
-  const joinDate = appUser.firebaseUser?.metadata?.creationTime
-    ? new Date(appUser.firebaseUser.metadata.creationTime).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-    : 'Fecha desconocida'; // Fallback if not available
+  // La fecha de unión ahora se obtiene de appUser.firebaseUser.metadata.creationTime
+  // appUser ya es el usuario del contexto, no una prop.
+  const joinDate = firebaseUser?.metadata?.creationTime // firebaseUser está en AppContext pero no se desestructura aquí
+    ? new Date(firebaseUser.metadata.creationTime).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+    : 'Fecha desconocida';
+  // Para que esto funcione, firebaseUser debe ser desestructurado de useAppContext
+  // const { appUser, posts: allPosts, showToast, firebaseUser } = useAppContext();
+  // Lo ajustaré al desestructurar arriba.
 
   const handleEditProfile = () => {
     showToast('La edición de perfil estará disponible próximamente.', 'info');
@@ -48,18 +44,17 @@ const Profile: React.FC = () => {
 
   const renderTabContent = () => {
     switch(activeTab) {
-      case 'tweets':
-        return userTweets.length === 0 ? (
+      case 'tweets': // Deberíamos renombrar esta tab a 'posts' en el array de abajo también
+        return userPosts.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
             <p className="text-xl font-bold mb-2">No has publicado nada aún</p>
-            <p>Cuando publiques tweets, aparecerán aquí.</p>
+            <p>Cuando publiques posts, aparecerán aquí.</p>
           </div>
         ) : (
-          userTweets.map((tweet) => (
-            <TweetCard
-              key={tweet.id}
-              tweet={tweet}
-              // TweetCard handles its own interactions via context
+          userPosts.map((post) => ( // Iterar sobre userPosts
+            <PostCard
+              key={post.id} // Usar post.id
+              post={post}   // Pasar el objeto post como prop 'post'
             />
           ))
         );
@@ -140,7 +135,7 @@ const Profile: React.FC = () => {
       
       <div className="border-b border-gray-200 dark:border-gray-800">
         <div className="flex">
-          {['tweets', 'replies', 'media', 'likes'].map((tab) => (
+          {['posts', 'replies', 'media', 'likes'].map((tab) => ( // Cambiado 'tweets' a 'posts'
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -150,7 +145,7 @@ const Profile: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
               }`}
             >
-              {tab === 'tweets' ? `Tweets (${userTweets.length})` : tab}
+              {tab === 'posts' ? `Posts (${userPosts.length})` : tab} {/* Cambiado 'Tweets' a 'Posts' y userTweets a userPosts */}
             </button>
           ))}
         </div>

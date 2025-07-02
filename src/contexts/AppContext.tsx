@@ -1,33 +1,38 @@
 // src/contexts/AppContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Tweet, User } from '../types';
-import { useAuth } from '../hooks/useAuth'; // Assuming useAuth provides the Firebase user object
-import { useTweets } from '../hooks/useTweets';
-import { useBookmarks } from '../hooks/useBookmarks';
+import { PostData, User } from '../types'; // Usar PostData en lugar de Tweet
+import { useAuth } from '../hooks/useAuth';
+import { usePosts } from '../hooks/usePosts'; // Importar usePosts
+// import { useBookmarks } from '../hooks/useBookmarks'; // Comentado por ahora si no se usa
 
 interface AppContextType {
   // User session
-  currentUser: User | null; // The app's User type, not FirebaseUser
-  firebaseUser: any; // Raw Firebase user object, for flexibility
+  currentUser: User | null;
+  firebaseUser: any;
   loadingAuth: boolean;
   showAuthModal: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
   handleAuthSuccess: () => void;
 
-  // Tweets
-  tweets: Tweet[];
-  handleNewTweet: (content: string, images?: File[]) => Promise<void>;
-  handleLikeTweet: (tweetId: string) => void;
-  handleRetweetTweet: (tweetId: string) => void;
-  handleReplyTweet: (tweetId: string) => void;
-  handleDeleteTweet: (tweetId: string) => void;
-  handleEditTweet: (tweetId: string, newContent: string) => void;
+  // Posts (antes Tweets)
+  posts: PostData[];
+  handleNewPost: (content: string) => Promise<void>; // Ya no maneja imágenes
+  loadingPosts: boolean; // Estado de carga para posts
+  errorPosts: string | null; // Estado de error para posts
+  fetchPosts: () => Promise<void>; // Para re-fetch manual
 
-  // Bookmarks
-  bookmarkedTweets: string[];
-  handleBookmarkTweet: (tweetId: string) => void;
-  isTweetBookmarked: (tweetId: string) => boolean;
+  // TODO: Funciones comentadas para likes, retweets, etc. se añadirán después
+  // handleLikePost: (postId: number) => void;
+  // handleRetweetPost: (postId: number) => void;
+  // handleReplyPost: (postId: number) => void;
+  // handleDeletePost: (postId: number) => void;
+  // handleEditPost: (postId: number, newContent: string) => void;
+
+  // Bookmarks (comentado temporalmente, se puede reactivar después)
+  // bookmarkedPosts: string[]; // o number[] si el ID es numérico
+  // handleBookmarkPost: (postId: number) => void;
+  // isPostBookmarked: (postId: number) => boolean;
 
   // Toast notifications
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
@@ -39,9 +44,9 @@ interface AppContextType {
   // Current User Profile (derived from firebaseUser)
   appUser: User | null;
 
-  // Profile update
-  updateUserProfilePicture: (userId: string, file: File) => Promise<string | null>;
-  loadingProfileUpdate: boolean; // Specific loading state for this operation
+  // Profile update (comentado temporalmente)
+  // updateUserProfilePicture: (userId: string, file: File) => Promise<string | null>;
+  // loadingProfileUpdate: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,35 +54,44 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const {
     user: firebaseUser,
-    loading: loadingAuth, // This is general auth loading (initial load, sign-in, etc.)
-    updateUserProfilePicture, // Function from useAuth
-    error: authError // We might need to expose authError too
+    loading: loadingAuth,
+    // updateUserProfilePicture, // Comentado en useAuth
+    error: authError
   } = useAuth();
 
-  // Specific loading state for profile picture update, separate from general loadingAuth
-  const [loadingProfileUpdate, setLoadingProfileUpdate] = useState(false);
+  // Specific loading state for profile picture update, separate from general loadingAuth (comentado)
+  // const [loadingProfileUpdate, setLoadingProfileUpdate] = useState(false);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [toastInfo, setToastInfo] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null); // For internal toast state
+  const [toastInfo, setToastInfo] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState('home');
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
-    // This function will be passed to hooks and components, but App.tsx will render the Toast component
     setToastInfo({ message, type });
-    // Logic to clear toastInfo will be in App.tsx or a dedicated ToastProvider
   };
 
-  const {
-    tweets,
-    handleNewTweet,
-    handleLike,
-    handleRetweet,
-    handleReply,
-    handleDeleteTweet,
-    handleEditTweet,
-  } = useTweets(firebaseUser, showToast);
+  // Derivar appUser ANTES de pasarlo a usePosts
+  const appUser = firebaseUser ? {
+    id: firebaseUser.uid,
+    username: firebaseUser.email?.split('@')[0] || firebaseUser.displayName?.toLowerCase().replace(/\s+/g, '_') || 'usuario_firebase',
+    displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario Firebase',
+    avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'UF')}&background=3b82f6&color=fff`,
+    bio: 'Usuario de EcuaPost',
+    followers: 0,
+    following: 0,
+    verified: firebaseUser.emailVerified || false,
+  } : null;
 
-  const { bookmarkedTweets, handleBookmark } = useBookmarks(showToast);
+  const {
+    posts, // antes tweets
+    handleNewPost, // antes handleNewTweet
+    loading: loadingPosts, // específico de posts
+    error: errorPosts,     // específico de posts
+    fetchPosts,            // para re-fetch manual
+    // Las funciones comentadas (handleLike, etc.) no se desestructuran aquí
+  } = usePosts(appUser, showToast); // Pasar appUser a usePosts
+
+  // const { bookmarkedTweets, handleBookmark } = useBookmarks(showToast); // Comentado
 
   const openAuthModal = () => setShowAuthModal(true);
   const closeAuthModal = () => setShowAuthModal(false);
@@ -87,57 +101,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     closeAuthModal();
   };
 
-  const appUser = firebaseUser ? {
-    id: firebaseUser.uid,
-    username: firebaseUser.email?.split('@')[0] || firebaseUser.displayName?.toLowerCase().replace(/\s+/g, '_') || 'usuario',
-    displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario',
-    avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario')}&background=3b82f6&color=fff`,
-    bio: 'Usuario de EcuaPost', // Default bio
-    followers: 0, // Default values
-    following: 0,
-    verified: firebaseUser.emailVerified || false, // Example: use emailVerified
-  } : null;
-
+  // appUser ya está derivado arriba
 
   const contextValue: AppContextType = {
-    currentUser: appUser, // Use the derived appUser here
+    // User session
+    currentUser: appUser,
     firebaseUser,
     loadingAuth,
     showAuthModal,
     openAuthModal,
     closeAuthModal,
     handleAuthSuccess,
-    tweets,
-    handleNewTweet,
-    handleLikeTweet: handleLike,
-    handleRetweetTweet: handleRetweet,
-    handleReplyTweet: handleReply,
-    handleDeleteTweet: handleDeleteTweet,
-    handleEditTweet: handleEditTweet,
-    bookmarkedTweets,
-    handleBookmarkTweet: handleBookmark,
-    isTweetBookmarked: (tweetId: string) => bookmarkedTweets.includes(tweetId),
-    showToast, // Pass the actual showToast function
+
+    // Posts
+    posts,
+    handleNewPost,
+    loadingPosts,
+    errorPosts,
+    fetchPosts,
+
+    // Bookmarks (comentado)
+    // bookmarkedPosts: bookmarkedTweets,
+    // handleBookmarkPost: handleBookmark,
+    // isPostBookmarked: (postId: number) => bookmarkedTweets.includes(String(postId)), // Ajustar ID si es numérico
+
+    // Toast
+    showToast,
+
+    // Navigation
     activeTab,
     setActiveTab,
-    appUser,
-    updateUserProfilePicture: async (userId: string, file: File) => {
-      setLoadingProfileUpdate(true);
-      try {
-        const result = await updateUserProfilePicture(userId, file); // Call the original function
-        // onAuthStateChanged should update firebaseUser, which updates appUser.
-        // If immediate feedback is needed beyond toast, appUser could be manually updated here,
-        // but it's generally better to rely on the auth state flow.
-        setLoadingProfileUpdate(false);
-        return result;
-      } catch (error) {
-        setLoadingProfileUpdate(false);
-        // The error should be handled by useAuth and shown via its error state or a toast
-        console.error("Error en AppContext al actualizar foto:", error);
-        throw error; // Re-throw para que el componente que llama pueda manejarlo si es necesario
-      }
-    },
-    loadingProfileUpdate,
+    appUser, // Sigue siendo útil tenerlo directamente
+
+    // Profile Update (comentado temporalmente según plan)
+    // updateUserProfilePicture: async (userId: string, file: File) => {
+    //   setLoadingProfileUpdate(true);
+    //   try {
+    //     const result = await updateUserProfilePicture(userId, file);
+    //     setLoadingProfileUpdate(false);
+    //     return result;
+    //   } catch (error) {
+    //     setLoadingProfileUpdate(false);
+    //     console.error("Error en AppContext al actualizar foto:", error);
+    //     throw error;
+    //   }
+    // },
+    // loadingProfileUpdate,
   };
 
   return (

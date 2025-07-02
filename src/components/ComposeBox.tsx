@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { Smile, Calendar, MapPin } from 'lucide-react';
-// import { useAuth } from '../hooks/useAuth'; // Replaced by useAppContext
 import { useAppContext } from '../contexts/AppContext';
-import ImageUpload from './ImageUpload';
-
-// ComposeBoxProps removed, onTweet comes from context
-// interface ComposeBoxProps {
-//  onTweet: (content: string, images?: File[]) => void;
-// }
 
 const ComposeBox: React.FC = () => {
-  const { appUser, handleNewTweet, showToast } = useAppContext();
+  const { appUser, handleNewPost, showToast } = useAppContext(); // Usar handleNewPost
   const [content, setContent] = useState('');
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  // const { user } = useAuth(); // appUser from context replaces this
   const maxLength = 280;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,35 +13,26 @@ const ComposeBox: React.FC = () => {
       showToast('Debes iniciar sesión para publicar.', 'error');
       return;
     }
-    if (content.trim() || selectedImages.length > 0) {
+    if (content.trim()) {
       if (content.length <= maxLength) {
-        await handleNewTweet(content, selectedImages);
+        await handleNewPost(content); // Llamar a handleNewPost solo con contenido
         setContent('');
-        setSelectedImages([]);
-        // ImageUpload component might need a reset prop or method if it holds its own state for previews
       } else {
-        showToast(`El tweet no puede exceder los ${maxLength} caracteres.`, 'error');
+        showToast(`El post no puede exceder los ${maxLength} caracteres.`, 'error');
       }
     } else {
-      showToast('El tweet no puede estar vacío si no hay imágenes.', 'info');
+      showToast('El post no puede estar vacío.', 'info');
     }
-  };
-
-  const handleImageSelect = (images: File[]) => {
-    setSelectedImages(images);
-  };
-
-  const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const remainingChars = maxLength - content.length;
   const isOverLimit = remainingChars < 0;
-  const isNearLimit = remainingChars <= 20 && remainingChars >=0; // Only near limit if not over
+  const isNearLimit = remainingChars <= 20 && remainingChars >=0;
 
-  const userAvatar = appUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(appUser?.displayName || 'Usuario')}&background=3b82f6&color=fff`;
+  const userAvatar = appUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(appUser?.displayName || 'U')}&background=3b82f6&color=fff`;
   const userName = appUser?.displayName || 'Usuario';
-  const canSubmit = (content.trim() || selectedImages.length > 0) && !isOverLimit && appUser != null;
+  // Solo se puede enviar si hay contenido y no se excede el límite y el usuario está logueado
+  const canSubmit = content.trim() && !isOverLimit && appUser != null;
 
 
   return (
@@ -72,23 +54,11 @@ const ComposeBox: React.FC = () => {
               disabled={!appUser}
             />
             
-            {/* Image Upload Component */}
-            {appUser && (
-              <div className="mt-3">
-                <ImageUpload
-                  onImageSelect={handleImageSelect}
-                  selectedImages={selectedImages}
-                  onRemoveImage={handleRemoveImage}
-                  maxImages={4}
-                />
-              </div>
-            )}
+            {/* Sección de ImageUpload eliminada */}
             
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center space-x-4">
-                {/* The ImageUpload component is correctly placed in the JSX structure above this block.
-                    This section is only for the Smile, Calendar, MapPin buttons.
-                */}
+                {/* Botones de Smile, Calendar, MapPin mantenidos pero sin funcionalidad de imagen */}
                 <button
                   type="button"
                   disabled={!appUser}
