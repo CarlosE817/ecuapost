@@ -23,19 +23,21 @@ function AppContent() {
     openAuthModal,
     closeAuthModal,
     handleAuthSuccess,
-    tweets,
-    handleNewTweet,
-    handleLikeTweet,
-    handleRetweetTweet,
-    handleReplyTweet,
-    handleDeleteTweet,
-    handleEditTweet,
-    bookmarkedTweets,
-    handleBookmarkTweet,
-    isTweetBookmarked, // Added from context
+    // --- Nuevos valores del contexto para posts ---
+    posts, // En lugar de tweets
+    // handleNewPost, // Si AppContent lo necesitara directamente
+    // loadingPosts,
+    // errorPosts,
+    // fetchPosts,
+    // --- Fin nuevos valores ---
+    // --- Valores comentados/eliminados del contexto ---
+    // handleLikeTweet, (y similares, ahora comentados en AppContext)
+    // bookmarkedTweets, (comentado en AppContext)
+    // isTweetBookmarked, (comentado en AppContext)
+    // --- Fin valores comentados ---
     activeTab,
     setActiveTab,
-    // showToast is available from context but Toast component itself needs state
+    showToast: contextShowToast // Renombrar para evitar conflicto con el estado local 'toast'
   } = useAppContext();
 
   console.log('AppContent - loadingAuth:', loadingAuth);
@@ -43,8 +45,12 @@ function AppContent() {
   console.log('AppContent - appUser:', appUser);
 
   // Local state for Toast component visibility and content
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
-  const contextShowToast = useAppContext().showToast; // Get showToast from context
+  // const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+  // El manejo del toast se simplificará o se hará directamente con el del contexto si es posible.
+  // Por ahora, el showToast del contexto es el que se usa en los hooks.
+  // App.tsx renderiza el Toast, pero su estado de visibilidad y contenido debe venir del contexto.
+  // Esto ya se maneja con internalToast y el useEffect que reacciona a toastInfo de AppContext (si se implementa así).
+  // El `contextShowToast` de arriba ya es la función de `showToast` del `AppContext`.
 
   // Effect to manage toast display based on context's request
   // This is a bit of a workaround. Ideally, Toast rendering is part of AppContext or a dedicated ToastContext
@@ -127,10 +133,8 @@ function AppContent() {
       case 'home':
         return <Feed />; // Feed ya obtiene posts del contexto
       case 'explore':
-        // Explore necesitará ser adaptado para usar `posts` y `PostData` si se mantiene.
-        // Por ahora, podría fallar o mostrar datos incorrectos si espera la estructura de `Tweet`.
-        // De momento, vamos a dejarlo así y luego se puede revisar.
-        return <Explore tweets={posts} />; // Pasando posts, pero Explore internamente espera Tweets
+        // Explore ya fue adaptado para tomar 'posts' del contexto.
+        return <Explore />;
       case 'notifications':
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver notificaciones.</div>;
         return <Notifications />;
@@ -141,11 +145,11 @@ function AppContent() {
         // Bookmarks también necesitará una refactorización mayor para PostData y nueva lógica de backend.
         // Comentado/simplificado por ahora.
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver tus bookmarks.</div>;
-        // return <Bookmarks tweets={posts.filter(post => isTweetBookmarked(post.id))} />;
         return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Bookmarks (Próximamente)</div>;
       case 'profile':
+        // Profile ya fue adaptado para tomar 'appUser' y 'posts' del contexto.
         if (!appUser) return <div className="p-4 text-center text-gray-500 dark:text-gray-400">Inicia sesión para ver tu perfil.</div>;
-        return <Profile user={appUser} tweets={userPosts} />; // Pasando userPosts. Profile necesitará adaptarse a PostData.
+        return <Profile />;
       case 'settings':
         return <Settings />;
       default:

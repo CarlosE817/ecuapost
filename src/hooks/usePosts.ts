@@ -1,8 +1,8 @@
 // src/hooks/usePosts.ts
 import { useState, useCallback, useEffect } from 'react';
-import { PostData, User as AppUser } from '../types'; // Renamed User to AppUser for clarity if needed, using PostData
+import { PostData, User as AppUser } from '../types';
 
-const API_URL = 'http://localhost:3000/posts';
+const API_URL = 'http://localhost:3000/api/posts'; // Actualizada la URL
 
 export const usePosts = (appUser: AppUser | null, showToast: (message: string, type?: 'success' | 'info' | 'error') => void) => {
   const [posts, setPosts] = useState<PostData[]>([]);
