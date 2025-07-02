@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield } from 'lucide-react';
+import { X, Mail, Phone, Chrome, Facebook, ArrowLeft, Shield, AlertCircle } from 'lucide-react';
 import { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -44,11 +44,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
-      onSuccess();
-      onClose();
+      const result = await signInWithGoogle();
+      
+      // Si result es null, significa que se usó redirect
+      if (result) {
+        onSuccess();
+        onClose();
+      } else {
+        // Con redirect, la página se recargará automáticamente
+        // No necesitamos hacer nada aquí
+      }
     } catch (error: any) {
       // Error is handled by useAuth hook
+      console.log('Error manejado por useAuth hook');
     } finally {
       setIsLoading(false);
     }
@@ -57,11 +65,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const handleFacebookSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithFacebook();
-      onSuccess();
-      onClose();
+      const result = await signInWithFacebook();
+      
+      if (result) {
+        onSuccess();
+        onClose();
+      }
     } catch (error: any) {
       // Error is handled by useAuth hook
+      console.log('Error manejado por useAuth hook');
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +161,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-red-600 dark:text-red-400 text-sm font-medium">Error de autenticación</p>
+                  <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                  {error.includes('popup') && (
+                    <div className="mt-2 text-xs text-red-500">
+                      <p>💡 <strong>Solución:</strong></p>
+                      <ul className="list-disc list-inside space-y-1 mt-1">
+                        <li>Permite popups en tu navegador</li>
+                        <li>Desactiva bloqueadores de anuncios temporalmente</li>
+                        <li>Si persiste, se usará redirección automática</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -162,24 +190,29 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Chrome className="h-5 w-5 text-blue-500" />
-                <span className="font-medium text-gray-900 dark:text-white">Continuar con Google</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {isLoading ? 'Conectando...' : 'Continuar con Google'}
+                </span>
               </button>
 
               <button
                 onClick={handleFacebookSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-3 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Facebook className="h-5 w-5" />
-                <span className="font-medium">Continuar con Facebook</span>
+                <span className="font-medium">
+                  {isLoading ? 'Conectando...' : 'Continuar con Facebook'}
+                </span>
               </button>
 
               <button
                 onClick={() => setAuthMode('phone')}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
                 <Phone className="h-5 w-5 text-green-500" />
                 <span className="font-medium text-gray-900 dark:text-white">Continuar con Teléfono</span>
@@ -208,24 +241,29 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Chrome className="h-5 w-5 text-blue-500" />
-                <span className="font-medium text-gray-900 dark:text-white">Registrarse con Google</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {isLoading ? 'Conectando...' : 'Registrarse con Google'}
+                </span>
               </button>
 
               <button
                 onClick={handleFacebookSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-3 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-3 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Facebook className="h-5 w-5" />
-                <span className="font-medium">Registrarse con Facebook</span>
+                <span className="font-medium">
+                  {isLoading ? 'Conectando...' : 'Registrarse con Facebook'}
+                </span>
               </button>
 
               <button
                 onClick={() => setAuthMode('phone')}
-                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
                 <Phone className="h-5 w-5 text-green-500" />
                 <span className="font-medium text-gray-900 dark:text-white">Registrarse con Teléfono</span>

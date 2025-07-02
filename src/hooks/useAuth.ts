@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { 
   User as FirebaseUser, 
   onAuthStateChanged, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithPhoneNumber,
   RecaptchaVerifier,
   ConfirmationResult,
@@ -44,6 +46,21 @@ export const useAuth = () => {
       setLoading(false);
     });
 
+    // Verificar si hay un resultado de redirect pendiente
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log('✅ Usuario logueado con redirect:', result.user);
+        }
+      } catch (error: any) {
+        console.error('❌ Error en redirect result:', error);
+        setError(error.message);
+      }
+    };
+
+    checkRedirectResult();
+
     return () => unsubscribe();
   }, []);
 
@@ -51,12 +68,48 @@ export const useAuth = () => {
     try {
       setError(null);
       setLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log('✅ Usuario logueado con Google:', result.user);
-      return result.user;
+      
+      // Intentar primero con popup
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        console.log('✅ Usuario logueado con Google (popup):', result.user);
+        return result.user;
+      } catch (popupError: any) {
+        // Si el popup falla, usar redirect
+        if (popupError.code === 'auth/popup-blocked' || 
+            popupError.code === 'auth/popup-closed-by-user' ||
+            popupError.code === 'auth/cancelled-popup-request') {
+          console.log('🔄 Popup bloqueado, usando redirect...');
+          await signInWithRedirect(auth, googleProvider);
+          // El resultado se manejará en getRedirectResult
+          return null;
+        } else {
+          throw popupError;
+        }
+      }
     } catch (error: any) {
       console.error('❌ Error al iniciar sesión con Google:', error);
-      setError(error.message);
+      
+      // Mensajes de error más amigables
+      let errorMessage = 'Error al iniciar sesión';
+      switch (error.code) {
+        case 'auth/popup-blocked':
+          errorMessage = 'Las ventanas emergentes están bloqueadas. Permitiendo popups y reintentando...';
+          break;
+        case 'auth/popup-closed-by-user':
+          errorMessage = 'Ventana de login cerrada. Inténtalo de nuevo.';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Error de conexión. Verifica tu internet.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Demasiados intentos. Espera un momento.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -67,12 +120,43 @@ export const useAuth = () => {
     try {
       setError(null);
       setLoading(true);
-      const result = await signInWithPopup(auth, facebookProvider);
-      console.log('✅ Usuario logueado con Facebook:', result.user);
-      return result.user;
+      
+      // Intentar primero con popup
+      try {
+        const result = await signInWithPopup(auth, facebookProvider);
+        console.log('✅ Usuario logueado con Facebook (popup):', result.user);
+        return result.user;
+      } catch (popupError: any) {
+        // Si el popup falla, usar redirect
+        if (popupError.code === 'auth/popup-blocked' || 
+            popupError.code === 'auth/popup-closed-by-user' ||
+            popupError.code === 'auth/cancelled-popup-request') {
+          console.log('🔄 Popup bloqueado, usando redirect...');
+          await signInWithRedirect(auth, facebookProvider);
+          return null;
+        } else {
+          throw popupError;
+        }
+      }
     } catch (error: any) {
       console.error('❌ Error al iniciar sesión con Facebook:', error);
-      setError(error.message);
+      
+      let errorMessage = 'Error al iniciar sesión con Facebook';
+      switch (error.code) {
+        case 'auth/popup-blocked':
+          errorMessage = 'Las ventanas emergentes están bloqueadas. Permitiendo popups y reintentando...';
+          break;
+        case 'auth/popup-closed-by-user':
+          errorMessage = 'Ventana de login cerrada. Inténtalo de nuevo.';
+          break;
+        case 'auth/account-exists-with-different-credential':
+          errorMessage = 'Ya existe una cuenta con este email usando otro método de login.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -89,7 +173,23 @@ export const useAuth = () => {
       return confirmationResult;
     } catch (error: any) {
       console.error('❌ Error al enviar SMS:', error);
-      setError(error.message);
+      
+      let errorMessage = 'Error al enviar código SMS';
+      switch (error.code) {
+        case 'auth/invalid-phone-number':
+          errorMessage = 'Número de teléfono inválido. Verifica el formato.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Demasiados intentos. Espera antes de solicitar otro código.';
+          break;
+        case 'auth/captcha-check-failed':
+          errorMessage = 'Verificación reCAPTCHA fallida. Inténtalo de nuevo.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
