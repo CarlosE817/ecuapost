@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PostData, User as AppUser } from '../types';
 
-const API_URL = 'http://localhost:3000/api/posts'; // Actualizada la URL
+const API_URL = 'http://localhost:3000/api/posts';
 
 export const usePosts = (appUser: AppUser | null, showToast: (message: string, type?: 'success' | 'info' | 'error') => void) => {
   const [posts, setPosts] = useState<PostData[]>([]);
@@ -13,20 +13,29 @@ export const usePosts = (appUser: AppUser | null, showToast: (message: string, t
     setLoading(true);
     setError(null);
     try {
+      console.log('🔄 Cargando posts desde el backend...');
       const response = await fetch(API_URL);
+      
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
+      
       const data: PostData[] = await response.json();
-      // Aquí podrías transformar la 'fecha' de string a Date si lo prefieres,
-      // pero el tipo PostData la define como string por ahora.
-      setPosts(data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())); // Ordenar por fecha descendente
-      showToast('Posts cargados desde el backend.', 'success');
+      console.log(`✅ ${data.length} posts cargados exitosamente`);
+      
+      // Ordenar por fecha descendente (más recientes primero)
+      const sortedPosts = data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      setPosts(sortedPosts);
+      
+      if (data.length > 0) {
+        showToast(`${data.length} posts cargados`, 'success');
+      }
     } catch (e: any) {
-      console.error('Error fetching posts:', e);
-      setError(e.message || 'Error al cargar los posts.');
-      showToast(e.message || 'Error al cargar los posts.', 'error');
-      setPosts([]); // Limpiar posts en caso de error
+      console.error('❌ Error fetching posts:', e);
+      const errorMessage = e.message || 'Error al cargar los posts';
+      setError(errorMessage);
+      showToast(`Error: ${errorMessage}`, 'error');
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -41,83 +50,154 @@ export const usePosts = (appUser: AppUser | null, showToast: (message: string, t
       showToast('Debes iniciar sesión para publicar.', 'error');
       return;
     }
+    
     if (!contenido.trim()) {
       showToast('El contenido del post no puede estar vacío.', 'info');
       return;
     }
 
-    setLoading(true); // Podríamos tener un loading específico para la creación
+    if (contenido.length > 280) {
+      showToast('El post no puede exceder los 280 caracteres.', 'error');
+      return;
+    }
+
+    console.log('📝 Creando nuevo post...', { contenido: contenido.substring(0, 50) + '...', user_id: appUser.id });
+    
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ contenido, user_id: appUser.id }),
+        body: JSON.stringify({ 
+          contenido: contenido.trim(), 
+          user_id: appUser.id 
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+        const errorData = await response.json().catch(() => ({ 
+          message: `Error ${response.status}: ${response.statusText}` 
+        }));
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
       const newPostFromServer: PostData = await response.json();
-      // Añadir el nuevo post al principio de la lista local para UI inmediata
-      // o mejor, volver a hacer fetch para consistencia, aunque puede ser más lento.
-      // Por ahora, añadimos localmente y luego re-fetch podría ser una opción.
-      setPosts(prevPosts => [newPostFromServer, ...prevPosts].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()));
+      console.log('✅ Post creado exitosamente:', newPostFromServer.id);
+      
+      // Actualizar el estado local inmediatamente para mejor UX
+      setPosts(prevPosts => {
+        const updatedPosts = [newPostFromServer, ...prevPosts];
+        return updatedPosts.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      });
+      
       showToast('¡Post publicado exitosamente!', 'success');
-      // Opcional: llamar a fetchPosts() para recargar todo y asegurar consistencia.
-      // await fetchPosts();
     } catch (e: any) {
-      console.error('Error creando post:', e);
-      showToast(e.message || 'Error al publicar el post.', 'error');
-    } finally {
-      setLoading(false); // Fin del loading de creación
+      console.error('❌ Error creando post:', e);
+      const errorMessage = e.message || 'Error al publicar el post';
+      showToast(`Error: ${errorMessage}`, 'error');
     }
-  }, [appUser, showToast]); // fetchPosts no necesita estar aquí si no se llama
+  }, [appUser, showToast]);
 
-  // --- Funciones comentadas (Likes, Retweets, etc.) ---
-  // const handleLike = useCallback((postId: number) => {
-  //   // Lógica para interactuar con el backend para likes
-  //   showToast('Función de Like próximamente...', 'info');
-  // }, [showToast]);
+  const handleEditPost = useCallback(async (postId: number, newContent: string) => {
+    if (!appUser) {
+      showToast('Debes iniciar sesión para editar posts.', 'error');
+      return;
+    }
 
-  // const handleRetweet = useCallback((postId: number) => {
-  //   // Lógica para interactuar con el backend para retweets
-  //   showToast('Función de Retweet próximamente...', 'info');
-  // }, [showToast]);
+    if (!newContent.trim()) {
+      showToast('El contenido no puede estar vacío.', 'error');
+      return;
+    }
 
-  // const handleReply = useCallback((postId: number) => {
-  //   console.log('Reply to post:', postId);
-  //   showToast('Función de respuesta próximamente...', 'info');
-  // }, [showToast]);
+    if (newContent.length > 280) {
+      showToast('El contenido no puede exceder los 280 caracteres.', 'error');
+      return;
+    }
 
-  // const handleDeletePost = useCallback(async (postId: number) => {
-  //   // Lógica para DELETE /posts/:id
-  //   // setPosts(prev => prev.filter(post => post.id !== postId));
-  //   showToast('Post eliminado (simulado)', 'success');
-  // }, [showToast]);
+    console.log('✏️ Editando post...', { postId, newContent: newContent.substring(0, 50) + '...' });
 
-  // const handleEditPost = useCallback(async (postId: number, newContent: string) => {
-  //   // Lógica para PUT /posts/:id
-  //   // setPosts(prev => prev.map(post =>
-  //   //   post.id === postId ? { ...post, contenido: newContent, fecha: new Date().toISOString() } : post
-  //   // ));
-  //   showToast('Post editado (simulado)', 'success');
-  // }, [showToast]);
+    try {
+      const response = await fetch(`${API_URL}/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          contenido: newContent.trim(), 
+          user_id: appUser.id 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+          message: `Error ${response.status}: ${response.statusText}` 
+        }));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const updatedPost: PostData = await response.json();
+      console.log('✅ Post editado exitosamente:', updatedPost.id);
+      
+      // Actualizar el estado local
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId ? updatedPost : post
+        ).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      );
+      
+      showToast('Post editado exitosamente', 'success');
+    } catch (e: any) {
+      console.error('❌ Error editando post:', e);
+      const errorMessage = e.message || 'Error al editar el post';
+      showToast(`Error: ${errorMessage}`, 'error');
+    }
+  }, [appUser, showToast]);
+
+  const handleDeletePost = useCallback(async (postId: number) => {
+    if (!appUser) {
+      showToast('Debes iniciar sesión para eliminar posts.', 'error');
+      return;
+    }
+
+    console.log('🗑️ Eliminando post...', { postId });
+
+    try {
+      const response = await fetch(`${API_URL}/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: appUser.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+          message: `Error ${response.status}: ${response.statusText}` 
+        }));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('✅ Post eliminado exitosamente:', postId);
+      
+      // Actualizar el estado local
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+      
+      showToast('Post eliminado exitosamente', 'success');
+    } catch (e: any) {
+      console.error('❌ Error eliminando post:', e);
+      const errorMessage = e.message || 'Error al eliminar el post';
+      showToast(`Error: ${errorMessage}`, 'error');
+    }
+  }, [appUser, showToast]);
 
   return {
-    posts, // Renombrado de tweets a posts
-    // setPosts, // Exponer setPosts si es necesario para manipulación directa
-    loading, // Loading general para fetchPosts
-    error,   // Error general para fetchPosts
-    fetchPosts, // Exponer para re-fetch manual si es necesario
-    handleNewPost, // Renombrado de handleNewTweet
-    // handleLike,
-    // handleRetweet,
-    // handleReply,
-    // handleDeletePost,
-    // handleEditPost,
+    posts,
+    loading,
+    error,
+    fetchPosts,
+    handleNewPost,
+    handleEditPost,
+    handleDeletePost,
   };
 };

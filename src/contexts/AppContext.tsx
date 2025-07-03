@@ -1,9 +1,8 @@
 // src/contexts/AppContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { PostData, User } from '../types'; // Usar PostData en lugar de Tweet
+import { PostData, User } from '../types';
 import { useAuth } from '../hooks/useAuth';
-import { usePosts } from '../hooks/usePosts'; // Importar usePosts
-// import { useBookmarks } from '../hooks/useBookmarks'; // Comentado por ahora si no se usa
+import { usePosts } from '../hooks/usePosts';
 
 interface AppContextType {
   // User session
@@ -15,24 +14,14 @@ interface AppContextType {
   closeAuthModal: () => void;
   handleAuthSuccess: () => void;
 
-  // Posts (antes Tweets)
+  // Posts
   posts: PostData[];
-  handleNewPost: (content: string) => Promise<void>; // Ya no maneja imágenes
-  loadingPosts: boolean; // Estado de carga para posts
-  errorPosts: string | null; // Estado de error para posts
-  fetchPosts: () => Promise<void>; // Para re-fetch manual
-
-  // TODO: Funciones comentadas para likes, retweets, etc. se añadirán después
-  // handleLikePost: (postId: number) => void;
-  // handleRetweetPost: (postId: number) => void;
-  // handleReplyPost: (postId: number) => void;
-  // handleDeletePost: (postId: number) => void;
-  // handleEditPost: (postId: number, newContent: string) => void;
-
-  // Bookmarks (comentado temporalmente, se puede reactivar después)
-  // bookmarkedPosts: string[]; // o number[] si el ID es numérico
-  // handleBookmarkPost: (postId: number) => void;
-  // isPostBookmarked: (postId: number) => boolean;
+  handleNewPost: (content: string) => Promise<void>;
+  handleEditPost: (postId: number, newContent: string) => Promise<void>;
+  handleDeletePost: (postId: number) => Promise<void>;
+  loadingPosts: boolean;
+  errorPosts: string | null;
+  fetchPosts: () => Promise<void>;
 
   // Toast notifications
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
@@ -43,10 +32,6 @@ interface AppContextType {
 
   // Current User Profile (derived from firebaseUser)
   appUser: User | null;
-
-  // Profile update (comentado temporalmente)
-  // updateUserProfilePicture: (userId: string, file: File) => Promise<string | null>;
-  // loadingProfileUpdate: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,12 +40,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const {
     user: firebaseUser,
     loading: loadingAuth,
-    // updateUserProfilePicture, // Comentado en useAuth
     error: authError
   } = useAuth();
-
-  // Specific loading state for profile picture update, separate from general loadingAuth (comentado)
-  // const [loadingProfileUpdate, setLoadingProfileUpdate] = useState(false);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -68,6 +49,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToastInfo({ message, type });
+    console.log(`🔔 Toast: ${type.toUpperCase()} - ${message}`);
   };
 
   // Derivar appUser ANTES de pasarlo a usePosts
@@ -83,15 +65,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   } : null;
 
   const {
-    posts, // antes tweets
-    handleNewPost, // antes handleNewTweet
-    loading: loadingPosts, // específico de posts
-    error: errorPosts,     // específico de posts
-    fetchPosts,            // para re-fetch manual
-    // Las funciones comentadas (handleLike, etc.) no se desestructuran aquí
-  } = usePosts(appUser, showToast); // Pasar appUser a usePosts
-
-  // const { bookmarkedTweets, handleBookmark } = useBookmarks(showToast); // Comentado
+    posts,
+    handleNewPost,
+    handleEditPost,
+    handleDeletePost,
+    loading: loadingPosts,
+    error: errorPosts,
+    fetchPosts,
+  } = usePosts(appUser, showToast);
 
   const openAuthModal = () => setShowAuthModal(true);
   const closeAuthModal = () => setShowAuthModal(false);
@@ -100,8 +81,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('¡Bienvenido a EcuaPost!', 'success');
     closeAuthModal();
   };
-
-  // appUser ya está derivado arriba
 
   const contextValue: AppContextType = {
     // User session
@@ -116,14 +95,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Posts
     posts,
     handleNewPost,
+    handleEditPost,
+    handleDeletePost,
     loadingPosts,
     errorPosts,
     fetchPosts,
-
-    // Bookmarks (comentado)
-    // bookmarkedPosts: bookmarkedTweets,
-    // handleBookmarkPost: handleBookmark,
-    // isPostBookmarked: (postId: number) => bookmarkedTweets.includes(String(postId)), // Ajustar ID si es numérico
 
     // Toast
     showToast,
@@ -131,28 +107,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Navigation
     activeTab,
     setActiveTab,
-    appUser, // Sigue siendo útil tenerlo directamente
-
-    // Profile Update (comentado temporalmente según plan)
-    // updateUserProfilePicture: async (userId: string, file: File) => {
-    //   setLoadingProfileUpdate(true);
-    //   try {
-    //     const result = await updateUserProfilePicture(userId, file);
-    //     setLoadingProfileUpdate(false);
-    //     return result;
-    //   } catch (error) {
-    //     setLoadingProfileUpdate(false);
-    //     console.error("Error en AppContext al actualizar foto:", error);
-    //     throw error;
-    //   }
-    // },
-    // loadingProfileUpdate,
+    appUser,
   };
 
   return (
     <AppContext.Provider value={contextValue}>
       {children}
-      {/* Toast component will be rendered in App.tsx to receive toastInfo */}
     </AppContext.Provider>
   );
 };
@@ -164,3 +124,5 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+export { AppContext };
