@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "backend": "cd server && node server.js",
+    "backend": "cd server && npm start",
     "dev:full": "concurrently \"npm run backend\" \"npm run dev\""
   },
   "dependencies": {
