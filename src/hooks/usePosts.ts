@@ -2,34 +2,62 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PostData, User as AppUser } from '../types';
 
-const API_URL = 'http://localhost:3000/api/posts'; // Actualizada la URL
+// const API_URL = 'http://localhost:3000/api/posts'; // Comentado temporalmente
+
+// --- Mock Data ---
+const MOCK_POSTS: PostData[] = [
+  {
+    id: 1,
+    contenido: '¡Explorando EcuaPost en mi móvil! 📱🇪🇨 Este es un post de ejemplo para ver cómo se adapta la interfaz. ¡Qué emoción!',
+    user_id: 'mockUser001',
+    fecha: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // Hace 30 mins
+    username: 'devtester',
+    displayName: 'Dev Tester 🧑‍💻',
+    avatar: 'https://ui-avatars.com/api/?name=DT&background=3498db&color=fff',
+    likes_count: 15,
+    comments_count: 3,
+  },
+  {
+    id: 2,
+    contenido: 'Segundo post de prueba. Probando un texto un poco más largo para ver el ajuste de líneas y la legibilidad en pantallas pequeñas. TailwindCSS debería ayudar mucho con esto. #React #MobileFriendly',
+    user_id: 'mockUser002',
+    fecha: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // Hace 2 horas
+    username: 'uimock',
+    displayName: 'UI Mockster ✨',
+    avatar: 'https://ui-avatars.com/api/?name=UM&background=e74c3c&color=fff',
+    likes_count: 8,
+    comments_count: 1,
+  },
+  {
+    id: 3,
+    contenido: 'Solo un post corto. #EcuaPost',
+    user_id: 'mockUser001', // Mismo usuario que el primero
+    fecha: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // Hace 5 horas
+    username: 'devtester',
+    displayName: 'Dev Tester 🧑‍💻',
+    avatar: 'https://ui-avatars.com/api/?name=DT&background=3498db&color=fff',
+    likes_count: 5,
+    comments_count: 0,
+  },
+];
+// --- Fin Mock Data ---
 
 export const usePosts = (appUser: AppUser | null, showToast: (message: string, type?: 'success' | 'info' | 'error') => void) => {
   const [posts, setPosts] = useState<PostData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false); // Simular carga
+  const [error, setError] = useState<string | null>(null); // No se usará mucho con mock data
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      const data: PostData[] = await response.json();
-      // Aquí podrías transformar la 'fecha' de string a Date si lo prefieres,
-      // pero el tipo PostData la define como string por ahora.
-      setPosts(data.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())); // Ordenar por fecha descendente
-      showToast('Posts cargados desde el backend.', 'success');
-    } catch (e: any) {
-      console.error('Error fetching posts:', e);
-      setError(e.message || 'Error al cargar los posts.');
-      showToast(e.message || 'Error al cargar los posts.', 'error');
-      setPosts([]); // Limpiar posts en caso de error
-    } finally {
-      setLoading(false);
-    }
+    console.log('Simulando fetchPosts con MOCK_POSTS...');
+    await new Promise(resolve => setTimeout(resolve, 700)); // Simular delay de red
+
+    const sortedMockPosts = [...MOCK_POSTS].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    setPosts(sortedMockPosts);
+
+    // showToast('Posts (simulados) cargados.', 'info'); // Opcional: toastear carga de mocks
+    setLoading(false);
   }, [showToast]);
 
   useEffect(() => {
@@ -38,44 +66,34 @@ export const usePosts = (appUser: AppUser | null, showToast: (message: string, t
 
   const handleNewPost = useCallback(async (contenido: string) => {
     if (!appUser) {
-      showToast('Debes iniciar sesión para publicar.', 'error');
+      showToast('Debes iniciar sesión para publicar (simulado).', 'error');
       return;
     }
     if (!contenido.trim()) {
-      showToast('El contenido del post no puede estar vacío.', 'info');
+      showToast('El contenido del post no puede estar vacío (simulado).', 'info');
       return;
     }
 
-    setLoading(true); // Podríamos tener un loading específico para la creación
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ contenido, user_id: appUser.id }),
-      });
+    console.log('Simulando handleNewPost...');
+    setLoading(true); // Simular carga brevemente
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-      }
+    const newMockPost: PostData = {
+      id: Date.now(), // ID simple para mock, no numérico como en el tipo original, pero ok para simulación
+      contenido,
+      user_id: appUser.id,
+      fecha: new Date().toISOString(),
+      username: appUser.username, // Usar username del appUser
+      displayName: appUser.displayName, // Usar displayName del appUser
+      avatar: appUser.avatar, // Usar avatar del appUser
+      likes_count: 0,
+      comments_count: 0,
+    };
 
-      const newPostFromServer: PostData = await response.json();
-      // Añadir el nuevo post al principio de la lista local para UI inmediata
-      // o mejor, volver a hacer fetch para consistencia, aunque puede ser más lento.
-      // Por ahora, añadimos localmente y luego re-fetch podría ser una opción.
-      setPosts(prevPosts => [newPostFromServer, ...prevPosts].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()));
-      showToast('¡Post publicado exitosamente!', 'success');
-      // Opcional: llamar a fetchPosts() para recargar todo y asegurar consistencia.
-      // await fetchPosts();
-    } catch (e: any) {
-      console.error('Error creando post:', e);
-      showToast(e.message || 'Error al publicar el post.', 'error');
-    } finally {
-      setLoading(false); // Fin del loading de creación
-    }
-  }, [appUser, showToast]); // fetchPosts no necesita estar aquí si no se llama
+    setPosts(prevPosts => [newMockPost, ...prevPosts].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()));
+    showToast('¡Post publicado (simulado)!', 'success');
+    setLoading(false);
+  }, [appUser, showToast]);
 
   // --- Funciones comentadas (Likes, Retweets, etc.) ---
   // const handleLike = useCallback((postId: number) => {
